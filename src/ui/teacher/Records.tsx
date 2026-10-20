@@ -1,5 +1,6 @@
 // Provas, Trabalhos, Notas e Faltas: as visões de "caderneta" da professora.
 import { useState } from 'react';
+import { tomb } from '../../store/merge';
 import { useApp } from '../../state';
 import { Avatar, LetterBadge, fmtDate, MONTHS_PT, toast, RefTag, PresencePick, Modal } from '../common';
 import { unitById, itemById, refLabel } from '../../content';
@@ -97,7 +98,7 @@ function ExamCard({ e }: { e: Exam }) {
       <div className="row wrap" style={{ gap: 6 }}>
         <button className="btn sm ghost" onClick={() => download(new Blob([examHtml(e, { teacher: db.settings.teacherName, keys: db.keys })], { type: 'text/html' }), file())}>⬇ Baixar folha em branco</button>
         <button className="btn sm ghost" onClick={() => openPrint(examHtml(e, { teacher: db.settings.teacherName, keys: db.keys, withKey: true }), file('gabarito'))}>✅ Folha com gabarito</button>
-        {!del ? <button className="link small" onClick={() => setDel(true)}>excluir</button> : <button className="btn sm red" onClick={() => update((d) => ({ ...d, exams: (d.exams ?? []).filter((x) => x.id !== e.id) }))}>Confirmar exclusão</button>}
+        {!del ? <button className="link small" onClick={() => setDel(true)}>excluir</button> : <button className="btn sm red" onClick={() => update((d) => tomb({ ...d, exams: (d.exams ?? []).filter((x) => x.id !== e.id) }, e.id))}>Confirmar exclusão</button>}
       </div>
     </article>
   );

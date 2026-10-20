@@ -98,6 +98,10 @@ await p.screenshot({ path: S + '10-ficha-erros.png' });
 await p.click('.ttabs >> text=Objetivos'); t = await text();
 if (!t.includes('Fazer o Homework da Unit 1 com os pais')) throw new Error('Ficha: próximo objetivo da aula não apareceu');
 
+// card para os pais também sai do Diário, para aulas antigas
+await p.click('nav >> text=Diário de aulas'); await p.click('.classrow >> text=💬 Card para os pais'); await p.waitForTimeout(600);
+await must('canvas.thanks-cv', 'card dos pais a partir do Diário'); await p.keyboard.press('Escape');
+
 // outras telas da professora
 for (const [nav, shot] of [['Faltas', '11-faltas'], ['Notas', '12-notas'], ['Calendário', '13-cal'], ['Trabalhos', '14-trabalhos'], ['Configurações', '15-config']]) {
   await p.click(`nav >> text=${nav}`); await p.waitForTimeout(150); await p.screenshot({ path: S + shot + '.png', fullPage: true });

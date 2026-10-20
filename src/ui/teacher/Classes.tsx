@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { tomb } from '../../store/merge';
+import { ThanksCard } from './ThanksCard';
 import { useApp } from '../../state';
 import { Avatar, Modal, fmtDate, toast, PresencePick } from '../common';
 import type { ClassRecord, Presence } from '../../store/types';
@@ -9,6 +11,7 @@ import { dayKey } from '../../engine/game';
 export function Classes() {
   const { db } = useApp();
   const [edit, setEdit] = useState<ClassRecord | null>(null);
+  const [card, setCard] = useState<ClassRecord | null>(null);
   const list = [...db.classes].sort((a, b) => b.date.localeCompare(a.date));
   const blank = (): ClassRecord => ({
     id: uid(), date: dayKey(), start: '', modality: 'presencial',
@@ -23,7 +26,8 @@ export function Classes() {
         {list.map((c) => {
           const pres = Object.entries(c.attendance);
           return (
-            <button key={c.id} className="srow" onClick={() => setEdit(c)}>
+            <div key={c.id} className="srow classrow">
+            <button className="classmain" onClick={() => setEdit(c)} aria-label={`Abrir aula de ${c.date}`}>
               <div style={{ textAlign: 'center', minWidth: 58 }}>
                 <b style={{ fontFamily: 'var(--f-display)', fontSize: 26, display: 'block', lineHeight: 1 }}>{c.date.slice(8)}</b>
                 <span className="small mute">{new Date(c.date + 'T12:00').toLocaleDateString('pt-BR', { month: 'short' })}</span>
@@ -35,10 +39,13 @@ export function Classes() {
               </div>
               <div className="row" style={{ gap: 4 }}>{pres.map(([sid, p]) => { const s = db.students.find((x) => x.id === sid); return s ? <span key={sid} style={{ opacity: p === 'P' ? 1 : 0.35 }}><Avatar s={s} size={30} /></span> : null; })}</div>
             </button>
+            {pres.some(([, p]) => p === 'P') && c.status !== 'aberta' && <button className="btn wa sm" onClick={() => setCard(c)}>💬 Card para os pais</button>}
+            </div>
           );
         })}
       </div>
       {edit && <ClassForm value={edit} onClose={() => setEdit(null)} />}
+      {card && <ThanksCard c={card} onClose={() => setCard(null)} />}
     </>
   );
 }
@@ -68,7 +75,7 @@ export function ClassForm({ value, onClose }: { value: ClassRecord; onClose: () 
     toast('Aula salva.');
     onClose();
   };
-  const del = () => { update((d) => ({ ...d, classes: d.classes.filter((x) => x.id !== c.id) })); onClose(); };
+  const del = () => { update((d) => tomb({ ...d, classes: d.classes.filter((x) => x.id !== c.id) }, c.id)); onClose(); };
 
   return (
     <Modal label="Registrar aula" onClose={onClose}>

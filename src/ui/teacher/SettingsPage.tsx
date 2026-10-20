@@ -73,6 +73,7 @@ export function SettingsPage() {
           <h3>Conta e banco de dados</h3>
           {account ? (
             <>
+              {db.settings.schoolCode && <div className="codebox"><span>Código da turma</span><b>{db.settings.schoolCode}</b><small>O aluno entra no celular dele com este código, o nome dele e a senha (o próprio nome, se você não trocou).</small></div>}
               <p>Entrou como <b>{account}</b>. {sync === 'saving' ? 'Salvando…' : sync === 'offline' ? 'Sem internet: salvo no aparelho, sobe quando voltar.' : 'Tudo salvo na nuvem ✓'}</p>
               <button className="btn ghost sm" style={{ alignSelf: 'flex-start' }} onClick={async () => { await signOut(); go({ name: 'login' }); }}>Sair da conta</button>
             </>

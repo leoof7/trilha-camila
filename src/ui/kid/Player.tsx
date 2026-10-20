@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { tomb, draftTomb } from '../../store/merge';
 import { useApp } from '../../state';
 import { findLesson, unitById, REVIEWS, allLessons, type Lesson } from '../../content';
 import { buildQuiz, buildExam, prepareLesson, prepareItem, type KeyMap, type Prepared } from '../../engine/session';
@@ -129,7 +130,7 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
     const d = { queue: queue.map((q) => q.id), idx, hearts, firstTry: { ...firstTry.current }, missed: [...missed.current], mistakes: mistakes.current, at: new Date().toISOString() };
     update((db) => ({ ...db, drafts: { ...(db.drafts ?? {}), [draftKey]: d } }));
   }, [idx, verdict, phase]);
-  const clearDraft = () => update((db) => { const dr = { ...(db.drafts ?? {}) }; delete dr[draftKey]; return { ...db, drafts: dr }; });
+  const clearDraft = () => update((db) => { const dr = { ...(db.drafts ?? {}) }; const old = dr[draftKey]; delete dr[draftKey]; return old ? tomb({ ...db, drafts: dr }, draftTomb(draftKey, old.at)) : { ...db, drafts: dr }; });
   const resume = () => {
     if (!draft) return setAskResume(false);
     const byId = new Map(items.map((it) => [it.id, it]));

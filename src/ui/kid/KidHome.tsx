@@ -15,7 +15,8 @@ const SNAKE = [0, 58, 86, 58, 0, -58, -86, -58];
 const NODE_H = 118;
 
 export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: string; tab?: 'trail' | 'album' | 'me' | 'book'; withTeacher?: boolean }) {
-  const { db, go } = useApp();
+  const { db, go, studentMode, leaveStudent } = useApp();
+  const [askOut, setAskOut] = useState(false);
   const s = db.students.find((x) => x.id === studentId);
   if (!s) return null;
   const xp = studentXp(db, s.id);
@@ -34,7 +35,7 @@ export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: 
               <div className="hello">Hi, {s.name}!</div>
               <div className="lv">{lv.emoji} {lv.name}{lv.next ? ` · faltam ${lv.next.xp - xp} XP para ${lv.next.name}` : ''}</div>
             </div>
-            <button className="btn sm ghost" style={{ background: 'rgba(255,255,255,.2)', color: '#fff', border: 0, boxShadow: 'none' }} onClick={() => go(withTeacher ? { name: 'teacher' } : { name: 'profiles' })} aria-label={withTeacher ? 'Voltar para a área da professora' : 'Sair'}>{withTeacher ? '‹ Professora' : 'Sair'}</button>
+            <button className="btn sm ghost" style={{ background: 'rgba(255,255,255,.2)', color: '#fff', border: 0, boxShadow: 'none' }} onClick={() => (withTeacher ? go({ name: 'teacher' }) : studentMode ? setAskOut(true) : go({ name: 'profiles' }))} aria-label={withTeacher ? 'Voltar para a área da professora' : 'Sair'}>{withTeacher ? '‹ Professora' : 'Sair'}</button>
           </div>
           <div className="xpbar" aria-hidden="true"><i style={{ width: `${lv.pct * 100}%` }} /></div>
           <div className="chips">
@@ -60,6 +61,14 @@ export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: 
         </div>
         <KidSide studentId={s.id} withTeacher={withTeacher} />
       </div>
+      {askOut && (
+        <Modal label="Sair deste aparelho" onClose={() => setAskOut(false)}>
+          <Mascot size={100} mood="sad" say="Bye bye!" />
+          <h2>Sair deste aparelho?</h2>
+          <p className="mute">Tudo o que você fez já está salvo. Para entrar de novo, vai precisar do código da turma, do seu nome e da senha.</p>
+          <div className="row"><button className="btn ghost grow" onClick={() => setAskOut(false)}>Ficar</button><button className="btn blue grow" onClick={leaveStudent}>Sair</button></div>
+        </Modal>
+      )}
     </div>
   );
 }

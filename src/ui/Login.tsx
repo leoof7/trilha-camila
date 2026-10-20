@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useApp } from '../state';
-import { signIn, signUp } from '../store/cloud';
+import { signIn, signUp, studentLogin } from '../store/cloud';
 import { Mascot } from './Mascot';
 import { LeseteSignature } from './Brand';
 
 export function Login() {
-  const { afterLogin, go, db } = useApp();
+  const { afterLogin, go, db, enterStudent } = useApp();
+  const [who, setWho] = useState<'prof' | 'aluno'>('prof');
+  const [code, setCode] = useState('');
+  const [nome, setNome] = useState('');
   const [mode, setMode] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
@@ -26,6 +29,13 @@ export function Login() {
     } catch (x) { setMsg((x as Error).message || 'Sem internet agora. Tente de novo.'); }
     setBusy(false);
   };
+  const submitStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (code.trim().length < 4 || !nome.trim() || !pass.trim()) return setMsg('Preencha o código da turma, seu nome e sua senha.');
+    setBusy(true); setMsg('');
+    try { enterStudent(await studentLogin(code, nome, pass)); } catch (x) { setMsg((x as Error).message); }
+    setBusy(false);
+  };
   const localOnly = () => {
     try { localStorage.setItem('trilha-so-aparelho', '1'); } catch { /* ignora */ }
     go(db.settings.setupDone ? { name: 'profiles' } : { name: 'setup' });
@@ -40,7 +50,21 @@ export function Login() {
           <p>Entre com o seu e-mail. Alunos, notas, faltas e o diário ficam guardados na sua conta, e só você vê.</p>
           <Mascot size={130} mood="happy" say="Hi, teacher!" />
         </aside>
+        {who === 'aluno' ? (
+        <form className="sheet" onSubmit={submitStudent}>
+          <div className="seg seg2"><button type="button" aria-pressed={false} onClick={() => { setWho('prof'); setMsg(''); }}>🍎 Sou a professora</button><button type="button" aria-pressed onClick={() => setWho('aluno')}>🎒 Sou aluno(a)</button></div>
+          <h2>Entrar na minha trilha</h2>
+          <p className="small mute">Peça o <b>código da turma</b> para a professora. A senha é o seu nome, se ela não trocou.</p>
+          <div className="field"><label htmlFor="sc">Código da turma</label><input id="sc" className="input" autoCapitalize="characters" autoComplete="off" maxLength={8} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} style={{ letterSpacing: 4, fontWeight: 800 }} /></div>
+          <div className="field"><label htmlFor="sn2">Seu nome</label><input id="sn2" className="input" autoComplete="off" value={nome} onChange={(e) => setNome(e.target.value)} /></div>
+          <div className="field"><label htmlFor="sp2">Senha</label><input id="sp2" className="input" type="password" autoComplete="off" value={pass} onChange={(e) => setPass(e.target.value)} /></div>
+          {msg && <p className="err">{msg}</p>}
+          <button className="btn blue block" type="submit" disabled={busy}>{busy ? 'Aguarde…' : 'Entrar'}</button>
+          <LeseteSignature />
+        </form>
+        ) : (
         <form className="sheet" onSubmit={submit}>
+          <div className="seg seg2"><button type="button" aria-pressed onClick={() => setWho('prof')}>🍎 Sou a professora</button><button type="button" aria-pressed={false} onClick={() => { setWho('aluno'); setMsg(''); }}>🎒 Sou aluno(a)</button></div>
           <div className="seg"><button type="button" aria-pressed={mode === 'in'} onClick={() => setMode('in')}>Entrar</button><button type="button" aria-pressed={mode === 'up'} onClick={() => setMode('up')}>Criar conta</button></div>
           <h2>{mode === 'in' ? 'Entrar' : 'Criar conta da professora'}</h2>
           <div className="field"><label htmlFor="le">E-mail</label><input id="le" className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
@@ -50,6 +74,7 @@ export function Login() {
           <button type="button" className="link small" onClick={localOnly}>Usar sem conta (salva só neste aparelho)</button>
           <LeseteSignature />
         </form>
+        )}
       </div>
     </main>
   );

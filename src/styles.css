@@ -652,3 +652,12 @@ table.t td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-al
 .node-wrap { height: 118px; }
 .node.next { transform: none; }
 .node-info { position: relative; z-index: 2; }
+.codebox { display: flex; flex-direction: column; gap: 4px; background: var(--navy); color: #fff; border-radius: 18px; padding: 14px 16px; }
+.codebox span { font-size: 11px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: #8FB0FF; }
+.codebox b { font: 800 32px var(--f-display); letter-spacing: 6px; }
+.codebox small { color: #C9CCF2; font-weight: 600; }
+.hpill.dark { background: var(--navy); color: #fff; border: 0; align-self: center; }
+.classrow { padding: 0; gap: 0; flex-wrap: wrap; }
+.classrow .classmain { flex: 1; display: flex; align-items: center; gap: 12px; border: 0; background: none; text-align: left; padding: 10px 12px; min-width: 0; }
+.classrow > .btn.wa { margin: 10px 12px; }
+.seg.seg2 { display: grid; grid-template-columns: 1fr 1fr; width: 100%; } .seg.seg2 button { white-space: nowrap; padding-inline: 8px; }

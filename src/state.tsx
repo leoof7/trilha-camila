@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DB, LessonResult, Student } from './store/types';
 import { emptyDB, loadDB, saveDB, uid } from './store/db';
-import { cloudOn, currentSession, pull, push, onSync, hasPending, markSeen, lastStamp, type SyncState } from './store/cloud';
+import { cloudOn, currentSession, pull, push, onSync, onMerged, hasPending, markSeen, lastStamp, studentSession, studentPull, studentLogout, type SyncState } from './store/cloud';
+import { mergeDB } from './store/merge';
 import { dayKey, streak } from './engine/game';
 import { autoStickers } from './engine/game';
 
@@ -23,6 +24,10 @@ interface Ctx {
   account: string | null;
   sync: SyncState;
   afterLogin: () => Promise<void>;
+  /** aluno entrou no celular dele (código da turma + nome + senha) */
+  studentMode: boolean;
+  enterStudent: (d: DB) => void;
+  leaveStudent: () => void;
 }
 
 const AppCtx = createContext<Ctx>(null as unknown as Ctx);
@@ -37,6 +42,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<string | null>(null);
   const [sync, setSync] = useState<SyncState>('off');
   useEffect(() => onSync(setSync), []);
+  const [studentMode, setStudentMode] = useState(!!studentSession());
+  const apply = (d: DB) => { dbRef.current = d; setDb(d); saveDB(d); };
+  // a nuvem tinha coisa nova (ex.: lição que a Anne fez em casa): junta com o que está na tela
+  useEffect(() => onMerged((m) => apply(mergeDB(m, dbRef.current))), []);
+
+  const enterStudent = useCallback((remote: DB) => {
+    const d = mergeDB(emptyDB(), { ...emptyDB(), ...remote });
+    apply(d); setStudentMode(true); setSync('saved');
+    const sid = d.students[0]?.id;
+    setScreen(sid ? { name: 'kid', studentId: sid } : { name: 'login' });
+  }, []);
+  const leaveStudent = useCallback(() => {
+    studentLogout(); setStudentMode(false); apply(emptyDB()); setScreen({ name: 'login' });
+  }, []);
 
   /** Depois do login: traz os dados da nuvem; se a nuvem está vazia, sobe o que já existe no aparelho. */
   const afterLogin = useCallback(async () => {
@@ -46,9 +65,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const remote = await pull();
       if (remote?.data && remote.data.version === 1) {
-        const d = { ...emptyDB(), ...remote.data };
+        // junta: o que já estava neste aparelho não se perde; em conflito vale a nuvem
+        const local = dbRef.current;
+        const d = mergeDB(local.settings.setupDone ? local : emptyDB(), { ...emptyDB(), ...remote.data });
         markSeen(remote.updated_at);
-        dbRef.current = d; setDb(d); saveDB(d); setSync('saved');
+        apply(d); setSync('saved');
+        if (local.settings.setupDone && (local.results.length || local.classes.length)) push(d);
         setScreen(d.settings.setupDone ? { name: 'profiles' } : { name: 'setup' });
       } else {
         push(dbRef.current);
@@ -63,7 +85,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dbRef.current = d;
       let localOnly = false;
       try { localOnly = localStorage.getItem('trilha-so-aparelho') === '1'; } catch { /* ignora */ }
-      if (cloudOn && !localOnly) {
+      if (cloudOn && studentSession()) {
+        const sid = d.students[0]?.id;
+        setScreen(sid ? { name: 'kid', studentId: sid } : { name: 'login' });
+        try { enterStudent(mergeDB(d, await studentPull())); } catch { /* sem internet: usa o que está no aparelho */ }
+      } else if (cloudOn && !localOnly) {
         const s = await currentSession();
         if (s) await afterLogin();
         else setScreen({ name: 'login' });
@@ -75,27 +101,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Ao vivo entre aparelhos: a cada poucos segundos (e quando a tela volta a ficar visível) confere se
   // outro aparelho salvou algo mais novo. Se este aparelho tem mudança esperando para subir, ela tem a vez.
   useEffect(() => {
-    if (!account) return;
+    if (!account && !studentMode) return;
     let busy = false;
     const check = async () => {
       if (busy || hasPending() || document.visibilityState !== 'visible') return;
       busy = true;
       try {
-        const remote = await pull();
-        if (remote?.data?.version === 1 && remote.updated_at > lastStamp && !hasPending()) {
-          markSeen(remote.updated_at);
-          const d = { ...emptyDB(), ...remote.data };
-          dbRef.current = d; setDb(d); saveDB(d); setSync('saved');
+        if (studentMode) {
+          const remote = await studentPull();
+          if (!hasPending()) apply(mergeDB(dbRef.current, { ...emptyDB(), ...remote }));
+        } else {
+          const remote = await pull();
+          if (remote?.data?.version === 1 && remote.updated_at > lastStamp && !hasPending()) {
+            markSeen(remote.updated_at);
+            apply(mergeDB(dbRef.current, { ...emptyDB(), ...remote.data })); setSync('saved');
+          }
         }
       } catch { /* sem internet: tenta de novo */ }
       busy = false;
     };
-    const t = setInterval(check, 6000);
+    const t = setInterval(check, studentMode ? 10000 : 6000);
     const vis = () => check();
     document.addEventListener('visibilitychange', vis);
     window.addEventListener('focus', vis);
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', vis); window.removeEventListener('focus', vis); };
-  }, [account]);
+  }, [account, studentMode]);
 
   const update = useCallback((fn: (d: DB) => DB) => {
     const next = fn(dbRef.current);
@@ -138,7 +168,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { stickers, streakDays: st };
   };
 
-  return <AppCtx.Provider value={{ db, ready, update, screen, go, saveResult, account, sync, afterLogin }}>{children}</AppCtx.Provider>;
+  return <AppCtx.Provider value={{ db, ready, update, screen, go, saveResult, account, sync, afterLogin, studentMode, enterStudent, leaveStudent }}>{children}</AppCtx.Provider>;
 }
 
 export function useStudent(id: string): Student | undefined {

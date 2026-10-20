@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { tomb } from '../../store/merge';
 import { useApp, studentXp } from '../../state';
 import { Avatar, LetterBadge, Modal, fmtDate, toast } from '../common';
 import { StudentFields, GuardiansFields } from '../Profiles';
@@ -28,7 +29,7 @@ export function Students({ open }: { open: (tab: string, sid?: string) => void }
   };
   return (
     <>
-      <div className="thead"><h1 className="grow">Alunos</h1><button className="btn yellow" onClick={() => setAdding(true)}>+ Novo aluno</button></div>
+      <div className="thead"><h1 className="grow">Alunos</h1>{db.settings.schoolCode && <span className="hpill dark" title="O aluno entra no celular dele com este código, o nome e a senha">Código da turma: <b>{db.settings.schoolCode}</b></span>}<button className="btn yellow" onClick={() => setAdding(true)}>+ Novo aluno</button></div>
       <div className="col">
         {db.students.filter((s) => !s.archived).map((s) => {
           const st = statusOf(db, s.id);
@@ -180,7 +181,7 @@ function Grades({ id }: { id: string }) {
             <thead><tr><th>Data</th><th>Avaliação</th><th>Pontos</th><th>Letra</th><th></th></tr></thead>
             <tbody>{gs.map((g) => (
               <tr key={g.id}><td className="tnum">{fmtDate(g.date)}</td><td>{g.title}<div className="small mute">{g.source === 'provinha' ? 'Provinha no app' : g.source === 'prova' ? 'Prova do caderno' : g.source === 'homework' ? 'Homework' : 'Lançada por você'}</div></td><td className="tnum"><b>{g.points}</b></td><td><LetterBadge points={g.points} scale={db.settings.scale} sm /></td>
-                <td><button className="link small" onClick={() => update((d) => ({ ...d, grades: d.grades.filter((x) => x.id !== g.id) }))}>remover</button></td></tr>
+                <td><button className="link small" onClick={() => update((d) => tomb({ ...d, grades: d.grades.filter((x) => x.id !== g.id) }, g.id))}>remover</button></td></tr>
             ))}</tbody>
           </table></div>
         )}

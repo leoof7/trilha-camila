@@ -139,3 +139,8 @@ link, várias turmas, Apostila 2.
 - **Computador:** o app do aluno vira 3 colunas — menu à esquerda (perfil, XP, seções), trilha no meio, e à direita "Continuar de onde parou", o capítulo atual, a página da apostila e as últimas figurinhas. Tela média: 2 colunas. Celular: igual antes.
 - **Trilha:** mais espaço entre as lições para a bolinha nunca cobrir o nome.
 - **Nuvem ligada:** banco Supabase do projeto "LESETE Camila" (tabela `trilha_escola` com RLS), Site URL = https://leoof7.github.io/trilha-camila/. Ao abrir, o app pede para entrar com e-mail (ou "Usar sem conta").
+
+## 16. Versão 6 (20/10/2026) — nuvem de verdade
+- **Sincronização ao vivo sem perder nada:** antes de gravar, o app junta o que está na nuvem com o que está no aparelho (tudo que tem id é somado; o que foi apagado de propósito vira "lápide" e não volta). Se dois aparelhos gravarem ao mesmo tempo, o segundo junta de novo e grava. Testes: `tests/merge.test.ts`.
+- **Login do aluno no celular dele:** "Sou aluno(a)" → **código da turma** (6 letras, aparece para a professora em Alunos e Configurações) + nome + senha (padrão: o nome). Aluno não tem e-mail nem conta. O banco devolve **só os dados dele** (sem colegas, sem telefone dos pais, sem senha da professora) e só aceita gravar o que é dele (lições, figurinhas, dias de estudo, lição pela metade). Quem faltou recebe a aula sem descrição. Testes num Postgres de verdade: `tests/banco.test.ts` (supabase/002_alunos.sql).
+- **Card para os pais** também no Diário de aulas, para qualquer aula já finalizada.

@@ -116,6 +116,7 @@ export interface Settings {
   scale: GradeScale;
   schoolYear: number;
   setupDone: boolean;
+  schoolCode?: string;     // código da turma: o aluno entra no celular dele com código + nome + senha
   teacherPhoto?: string;   // foto da professora (pequena, data URL)
   pinOptional?: boolean;   // v2: senha passou a ser opcional
   activeClassId?: string;  // aula em andamento
@@ -137,6 +138,7 @@ export interface DB {
   drafts?: Record<string, Draft>;      // lição começada e não terminada
   homework?: HomeworkMark[];
   exams?: Exam[];                      // caderno de provas criado pela professora
+  removed?: string[];                  // ids apagados de propósito (não voltam na sincronização)
 }
 
 export interface Exam {
