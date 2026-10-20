@@ -102,3 +102,19 @@ export function fmtDate(d: string) {
 }
 
 export const MONTHS_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+/** Presença: Presente ou Falta. "Justificada" é um detalhe da falta (o dado continua 'J'). */
+export function PresencePick({ value, onChange }: { value?: 'P' | 'F' | 'J'; onChange: (p: 'P' | 'F' | 'J') => void }) {
+  const absent = value === 'F' || value === 'J';
+  return (
+    <div className="presence">
+      <button className="P" aria-pressed={value === 'P'} onClick={() => onChange('P')}>Presente</button>
+      <button className={value === 'J' ? 'J' : 'F'} aria-pressed={absent} onClick={() => onChange(absent ? value! : 'F')}>Falta</button>
+      {absent && (
+        <label className="just">
+          <input type="checkbox" checked={value === 'J'} onChange={() => onChange(value === 'J' ? 'F' : 'J')} /> justificada
+        </label>
+      )}
+    </div>
+  );
+}

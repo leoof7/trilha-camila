@@ -129,3 +129,11 @@ export function unitById(id: number) {
 export function itemsWithIds(lesson: Lesson): Ex[] {
   return lesson.items.map((it, i) => ({ ...it, id: `${lesson.id}#${i}`, ref: it.ref ?? lesson.ref }));
 }
+
+/** Acha um exercício pelo id (lessonId#i), com a unit e o título da lição. */
+export function itemById(id: string): { item: Ex; unitId: number; lessonTitle: string } | null {
+  const f = findLesson(id.split('#')[0]);
+  if (!f) return null;
+  const item = itemsWithIds(f.lesson).find((x) => x.id === id);
+  return item ? { item, unitId: f.unitId, lessonTitle: f.lesson.title } : null;
+}

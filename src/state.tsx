@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DB, LessonResult, Student } from './store/types';
 import { emptyDB, loadDB, saveDB, uid } from './store/db';
-import { cloudOn, currentSession, pull, push, onSync, type SyncState } from './store/cloud';
+import { cloudOn, currentSession, pull, push, onSync, hasPending, markSeen, lastStamp, type SyncState } from './store/cloud';
 import { dayKey, streak } from './engine/game';
 import { autoStickers } from './engine/game';
 
@@ -47,6 +47,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const remote = await pull();
       if (remote?.data && remote.data.version === 1) {
         const d = { ...emptyDB(), ...remote.data };
+        markSeen(remote.updated_at);
         dbRef.current = d; setDb(d); saveDB(d); setSync('saved');
         setScreen(d.settings.setupDone ? { name: 'profiles' } : { name: 'setup' });
       } else {
@@ -70,6 +71,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setReady(true);
     });
   }, []);
+
+  // Ao vivo entre aparelhos: a cada poucos segundos (e quando a tela volta a ficar visível) confere se
+  // outro aparelho salvou algo mais novo. Se este aparelho tem mudança esperando para subir, ela tem a vez.
+  useEffect(() => {
+    if (!account) return;
+    let busy = false;
+    const check = async () => {
+      if (busy || hasPending() || document.visibilityState !== 'visible') return;
+      busy = true;
+      try {
+        const remote = await pull();
+        if (remote?.data?.version === 1 && remote.updated_at > lastStamp && !hasPending()) {
+          markSeen(remote.updated_at);
+          const d = { ...emptyDB(), ...remote.data };
+          dbRef.current = d; setDb(d); saveDB(d); setSync('saved');
+        }
+      } catch { /* sem internet: tenta de novo */ }
+      busy = false;
+    };
+    const t = setInterval(check, 6000);
+    const vis = () => check();
+    document.addEventListener('visibilitychange', vis);
+    window.addEventListener('focus', vis);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', vis); window.removeEventListener('focus', vis); };
+  }, [account]);
 
   const update = useCallback((fn: (d: DB) => DB) => {
     const next = fn(dbRef.current);
@@ -103,7 +129,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       studyDays: { ...db.studyDays, [r.studentId]: days },
       grades:
         r.mode === 'quiz'
-          ? [...db.grades, { id: uid(), studentId: r.studentId, date: today, unitId: r.unitId, title: `Provinha · Unit ${r.unitId}`, points: r.points, source: 'provinha', resultId: result.id }]
+          ? [...db.grades, r.lessonId.startsWith('exam-')
+            ? { id: uid(), studentId: r.studentId, date: today, unitId: r.unitId, title: db.exams?.find((e) => `exam-${e.id}` === r.lessonId)?.title ?? 'Prova', points: r.points, source: 'prova' as const, resultId: result.id }
+            : { id: uid(), studentId: r.studentId, date: today, unitId: r.unitId, title: `Provinha · Unit ${r.unitId}`, points: r.points, source: 'provinha' as const, resultId: result.id }]
           : db.grades,
       stickers: [...db.stickers, ...stickers.map((s) => ({ id: uid(), studentId: r.studentId, sticker: s, date: today, by: 'app' as const, reason: kind }))],
     }));

@@ -50,7 +50,7 @@ export interface Grade {
   unitId?: number;
   title: string;
   points: number;           // 0–100
-  source: 'provinha' | 'manual' | 'homework';
+  source: 'provinha' | 'manual' | 'homework' | 'prova';
   resultId?: string;
 }
 
@@ -66,6 +66,7 @@ export interface ClassRecord {
   status?: 'aberta' | 'finalizada';
   startedAt?: string;       // ISO, quando a professora tocou em Iniciar aula
   end?: string;             // "17:05"
+  plan?: string[];          // plano da aula: lições sugeridas/escolhidas ao iniciar (quiz-uN = provinha)
 }
 
 export interface HomeworkMark {   // Trabalhos: homework de cada unit
@@ -115,6 +116,7 @@ export interface Settings {
   scale: GradeScale;
   schoolYear: number;
   setupDone: boolean;
+  teacherPhoto?: string;   // foto da professora (pequena, data URL)
   pinOptional?: boolean;   // v2: senha passou a ser opcional
   activeClassId?: string;  // aula em andamento
   noClassDays?: string[];  // dias marcados como "hoje não tem aula"
@@ -134,6 +136,15 @@ export interface DB {
   studyDays: Record<string, string[]>; // studentId -> dias com estudo
   drafts?: Record<string, Draft>;      // lição começada e não terminada
   homework?: HomeworkMark[];
+  exams?: Exam[];                      // caderno de provas criado pela professora
+}
+
+export interface Exam {
+  id: string;
+  title: string;
+  unitIds: number[];
+  itemIds: string[];        // ids dos exercícios da apostila (lessonId#i)
+  createdAt: string;
 }
 
 export interface Draft {

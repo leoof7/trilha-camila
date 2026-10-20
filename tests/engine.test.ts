@@ -62,3 +62,17 @@ describe('personalização', () => {
     expect(personalize('{spelled}', { name: 'Anne', age: 9 })).toBe('A - N - N - E');
   });
 });
+
+import { passwordOk } from '../src/engine/game';
+describe('senha do aluno', () => {
+  it('por padrão é o nome, sem ligar para maiúscula e acento', () => {
+    expect(passwordOk({ name: 'Anne' }, 'anne')).toBe(true);
+    expect(passwordOk({ name: 'Júlia' }, 'JULIA ')).toBe(true);
+    expect(passwordOk({ name: 'Anne' }, 'ana')).toBe(false);
+    expect(passwordOk({ name: 'Anne' }, '')).toBe(false);
+  });
+  it('se a professora criou outra senha, vale a nova', () => {
+    expect(passwordOk({ name: 'Anne', pin: '1234' }, '1234')).toBe(true);
+    expect(passwordOk({ name: 'Anne', pin: '1234' }, 'anne')).toBe(false);
+  });
+});

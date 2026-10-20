@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useApp } from '../../state';
 import { exportBackup, parseBackup, saveDB } from '../../store/db';
-import { download } from '../../lib/image';
+import { download, photoFromFile } from '../../lib/image';
+import { TeacherAvatar } from './TeacherAvatar';
 import { toast } from '../common';
 import { dayKey } from '../../engine/game';
 import { cloudOn, signOut } from '../../store/cloud';
@@ -31,7 +32,21 @@ export function SettingsPage() {
       <div className="thead"><h1 className="grow">Configurações</h1></div>
       <div className="grid2" style={{ alignItems: 'start' }}>
         <section className="card">
-          <h3>Professora</h3>
+          <h3>Meu perfil</h3>
+          <div className="photo-pick">
+            <TeacherAvatar size={88} />
+            <div className="col" style={{ gap: 6 }}>
+              <label className="btn sm blue" style={{ textAlign: 'center', boxShadow: '0 3px 0 var(--blue-d)' }}>
+                {db.settings.teacherPhoto ? 'Trocar foto' : '📷 Colocar foto'}
+                <input type="file" accept="image/*" className="sr" onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  try { const ph = await photoFromFile(f); update((d) => ({ ...d, settings: { ...d.settings, teacherPhoto: ph } })); toast('Foto salva.'); } catch (x) { setErr((x as Error).message); }
+                }} />
+              </label>
+              {db.settings.teacherPhoto && <button className="link small" onClick={() => update((d) => ({ ...d, settings: { ...d.settings, teacherPhoto: undefined } }))}>Tirar foto</button>}
+            </div>
+          </div>
           <div className="field"><label htmlFor="sn">Nome</label><input id="sn" className="input" value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div className="field"><label htmlFor="sp">{db.settings.pin ? 'Nova senha (4 números)' : 'Criar senha (opcional, 4 números)'}</label><input id="sp" className="input" type="password" inputMode="numeric" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} placeholder={db.settings.pin ? 'deixe vazio para manter' : 'sem senha'} /></div>
           {db.settings.pin && <button className="link small" style={{ alignSelf: 'flex-start' }} onClick={() => { update((d) => ({ ...d, settings: { ...d.settings, pin: '' } })); toast('Senha removida.'); }}>Tirar a senha</button>}

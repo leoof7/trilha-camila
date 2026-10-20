@@ -2,11 +2,32 @@
 // (o app traz as lições feitas na aula e a professora escreve a descrição e o próximo objetivo).
 import { useState } from 'react';
 import { useApp } from '../../state';
-import { Avatar, Modal, toast } from '../common';
+import { Avatar, Modal, toast, PresencePick } from '../common';
 import type { ClassRecord, Modality, Presence } from '../../store/types';
 import { uid } from '../../store/db';
 import { dayKey } from '../../engine/game';
-import { findLesson, refLabel } from '../../content';
+import { findLesson, refLabel, unitById } from '../../content';
+import { lessonDone, bestQuiz } from '../kid/progress';
+import { weakItems } from './stats';
+import type { DB } from '../../store/types';
+import { ThanksCard } from './ThanksCard';
+
+/** Sugestões para o plano da aula: próximas lições da unit de cada aluno presente, lições onde mais erra e a provinha quando a unit acabou. */
+export function suggestPlan(db: DB, studentIds: string[]) {
+  const out: { id: string; why: string }[] = [];
+  const add = (id: string, why: string) => { if (!out.some((x) => x.id === id)) out.push({ id, why }); };
+  for (const sid of studentIds) {
+    const s = db.students.find((x) => x.id === sid);
+    if (!s) continue;
+    const u = unitById(s.currentUnit);
+    const todo = u.lessons.filter((l) => !lessonDone(db, sid, l.id));
+    todo.slice(0, 3).forEach((l) => add(l.id, `próxima de ${s.name}`));
+    if (!todo.length && !bestQuiz(db, sid, u.id)) add(`quiz-u${u.id}`, `${s.name} terminou a Unit ${u.id}`);
+    weakItems(db, sid, 4).forEach((w) => add(w.id.split('#')[0], `${s.name} errou aqui`));
+  }
+  return out.slice(0, 7);
+}
+export const planLabel = (id: string) => (id.startsWith('quiz-u') ? `📝 Provinha da Unit ${id.slice(6)}` : findLesson(id)?.lesson.title ?? id);
 
 const hhmm = (d = new Date()) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
@@ -20,8 +41,10 @@ export function StartClass({ onClose }: { onClose: () => void }) {
   const students = db.students.filter((s) => !s.archived);
   const [att, setAtt] = useState<Record<string, Presence>>(Object.fromEntries(students.map((s) => [s.id, 'P' as Presence])));
   const [mod, setMod] = useState<Modality>('presencial');
+  const sugg = suggestPlan(db, Object.keys(att).filter((k) => att[k] === 'P'));
+  const [plan, setPlan] = useState<string[]>(sugg.slice(0, 3).map((x) => x.id));
   const start = () => {
-    const c: ClassRecord = { id: uid(), date: dayKey(), start: hhmm(), startedAt: new Date().toISOString(), modality: mod, attendance: att, lessons: [], notes: '', nextGoal: '', status: 'aberta' };
+    const c: ClassRecord = { id: uid(), date: dayKey(), start: hhmm(), startedAt: new Date().toISOString(), modality: mod, attendance: att, lessons: [], notes: '', nextGoal: '', status: 'aberta', plan };
     update((d) => ({ ...d, classes: [...d.classes, c], settings: { ...d.settings, activeClassId: c.id, noClassDays: (d.settings.noClassDays ?? []).filter((x) => x !== c.date) } }));
     toast(`Aula iniciada às ${c.start}.`);
     onClose();
@@ -37,18 +60,23 @@ export function StartClass({ onClose }: { onClose: () => void }) {
         {students.map((s) => (
           <div key={s.id} className="row" style={{ justifyContent: 'space-between' }}>
             <span className="row"><Avatar s={s} size={34} /><b>{s.name}</b></span>
-            <div className="presence">
-              {(['P', 'F', 'J'] as Presence[]).map((p) => <button key={p} className={p} aria-pressed={att[s.id] === p} onClick={() => setAtt({ ...att, [s.id]: p })}>{p === 'P' ? 'Presente' : p === 'F' ? 'Falta' : 'Justificada'}</button>)}
-            </div>
+            <PresencePick value={att[s.id]} onChange={(p) => setAtt({ ...att, [s.id]: p })} />
           </div>
         ))}
       </div>
+      {sugg.length > 0 && (
+        <div className="field"><span className="lbl">Plano de hoje · sugestões do app (toque para tirar ou pôr)</span>
+          <div className="lessonpick">
+            {sugg.map((x) => <button key={x.id} aria-pressed={plan.includes(x.id)} onClick={() => setPlan(plan.includes(x.id) ? plan.filter((y) => y !== x.id) : [...plan, x.id])}>{planLabel(x.id)} <small>· {x.why}</small></button>)}
+          </div>
+        </div>
+      )}
       <div className="row"><button className="btn ghost" onClick={onClose}>Cancelar</button><button className="btn blue grow" onClick={start}>Começar a aula</button></div>
     </Modal>
   );
 }
 
-export function FinishClass({ c, onClose }: { c: ClassRecord; onClose: () => void }) {
+export function FinishClass({ c, onClose, onDone }: { c: ClassRecord; onClose: () => void; onDone?: (c: ClassRecord) => void }) {
   const { db, update } = useApp();
   // lições feitas no modo aula desde que a aula começou
   const done = db.results.filter((r) => r.withTeacher && c.startedAt && r.at >= c.startedAt);
@@ -70,6 +98,7 @@ export function FinishClass({ c, onClose }: { c: ClassRecord; onClose: () => voi
     }));
     toast('Aula finalizada e salva no calendário.');
     onClose();
+    onDone?.(fin);
   };
   return (
     <Modal label="Finalizar aula" onClose={onClose}>
@@ -93,16 +122,20 @@ export function FinishClass({ c, onClose }: { c: ClassRecord; onClose: () => voi
 /** Faixa que aparece enquanto a aula está acontecendo (na área da professora e na trilha do aluno). */
 export function ClassBar({ compact }: { compact?: boolean }) {
   const c = useActiveClass();
+  const { go } = useApp();
   const [fin, setFin] = useState(false);
+  const [card, setCard] = useState<ClassRecord | null>(null);
+  if (card) return <ThanksCard c={card} onClose={() => setCard(null)} />;
   if (!c) return null;
   return (
     <>
       <div className={`classbar${compact ? ' compact' : ''}`} role="status">
         <span className="dot" aria-hidden="true" />
         <b>Aula em andamento</b><span className="mute">desde {c.start}</span>
-        <button className="btn sm red" style={{ marginLeft: 'auto', boxShadow: 'none' }} onClick={() => setFin(true)}>■ Finalizar aula</button>
+        {compact && <button className="btn sm ghost" style={{ marginLeft: 'auto', boxShadow: 'none' }} onClick={() => go({ name: 'teacher' })}>🏠 Meu menu</button>}
+        <button className="btn sm red" style={{ marginLeft: compact ? 0 : 'auto', boxShadow: 'none' }} onClick={() => setFin(true)}>■ Finalizar aula</button>
       </div>
-      {fin && <FinishClass c={c} onClose={() => setFin(false)} />}
+      {fin && <FinishClass c={c} onClose={() => setFin(false)} onDone={setCard} />}
     </>
   );
 }

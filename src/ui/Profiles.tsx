@@ -7,6 +7,7 @@ import { photoFromFile } from '../lib/image';
 import { APOSTILA } from '../content';
 import { Mascot } from './Mascot';
 import { LeseteSignature } from './Brand';
+import { passwordOk } from '../engine/game';
 
 export function Profiles() {
   const { db, go } = useApp();
@@ -15,8 +16,10 @@ export function Profiles() {
   const students = db.students.filter((s) => !s.archived);
 
   const openTeacher = () => (db.settings.pin ? setAskPin({ pin: db.settings.pin, title: `Olá, ${db.settings.teacherName}!`, then: () => go({ name: 'teacher' }) }) : go({ name: 'teacher' }));
-  const openStudent = (s: Student) => (s.pin ? setAskPin({ pin: s.pin, title: `Oi, ${s.name}!`, then: () => go({ name: 'kid', studentId: s.id }) }) : go({ name: 'kid', studentId: s.id }));
+  const [askStu, setAskStu] = useState<Student | null>(null);
+  const openStudent = (s: Student) => setAskStu(s);
 
+  if (askStu) return <StudentPassword s={askStu} onOk={() => go({ name: 'kid', studentId: askStu.id })} onCancel={() => setAskStu(null)} />;
   if (askPin) return <PinScreen pin={askPin.pin} title={askPin.title} onOk={askPin.then} onCancel={() => setAskPin(null)} />;
 
   return (
@@ -50,7 +53,7 @@ export function Profiles() {
                   {s.photo ? <img src={s.photo} alt="" /> : s.name[0]}
                 </span>
                 <b>{s.name}</b>
-                <span>{s.pin ? '🔒 com senha' : `Unit ${s.currentUnit}`}</span>
+                <span>🔒 Unit {s.currentUnit}</span>
               </button>
             ))}
           </div>
@@ -59,6 +62,33 @@ export function Profiles() {
         </>
       )}
       <LeseteSignature />
+    </main>
+  );
+}
+
+/** Entrada do aluno: a senha padrão é o próprio nome (a professora pode trocar na ficha). */
+function StudentPassword({ s, onOk, onCancel }: { s: Student; onOk: () => void; onCancel: () => void }) {
+  const [v, setV] = useState('');
+  const [bad, setBad] = useState(false);
+  const [tries, setTries] = useState(0);
+  const send = () => {
+    if (passwordOk(s, v)) return onOk();
+    setBad(true); setTries(tries + 1); setV('');
+    setTimeout(() => setBad(false), 450);
+  };
+  return (
+    <main className="profiles">
+      <div className="pin">
+        <span className="face bigface" style={{ background: s.gender === 'm' ? '#1F5AE2' : '#E8458B' }}>{s.photo ? <img src={s.photo} alt="" /> : s.name[0]}</span>
+        <h1 style={{ fontSize: 32 }}>Oi, {s.name}!</h1>
+        <p className="mute">Digite sua senha</p>
+        <form className={`col${bad ? ' shake' : ''}`} style={{ width: '100%', maxWidth: 300 }} onSubmit={(e) => { e.preventDefault(); send(); }}>
+          <input id="spw" className="input" type="password" autoFocus autoComplete="off" value={v} onChange={(e) => setV(e.target.value)} aria-label="Senha" />
+          <button className="btn blue block" type="submit" disabled={!v.trim()}>Entrar</button>
+        </form>
+        {tries > 0 && <p className="small" style={{ color: 'var(--warn)', fontWeight: 800 }}>Quase! Tente de novo.{tries > 1 && !s.pin ? ' Dica: é o seu nome.' : tries > 1 ? ' Peça ajuda para a professora.' : ''}</p>}
+        <button className="link" onClick={onCancel}>‹ Voltar</button>
+      </div>
     </main>
   );
 }

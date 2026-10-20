@@ -527,3 +527,83 @@ table.t td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-al
 
 .hwrow { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 14px; }
 .tside { overflow-y: auto; }
+.presence .just { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; color: var(--warn); padding-inline: 4px; }
+.pin .bigface { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 800 40px var(--f-display); overflow: hidden; }
+.pin .bigface img { width: 100%; height: 100%; object-fit: cover; }
+.shake { animation: shake .4s; }
+.thanks-cv { width: 100%; max-width: 420px; aspect-ratio: 1; border-radius: 18px; box-shadow: 0 10px 30px rgba(10,15,31,.18); align-self: center; background: #F7F6F3; }
+.btn.wa { background: #25D366; color: #fff; box-shadow: 0 4px 0 #128C4A; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.lessonpick button small { font-weight: 600; opacity: .7; }
+.examgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.examcard { border: 2px solid var(--line); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px; background: #fff; }
+.examcard .etitle { font: 800 19px var(--f-display); }
+.examrow { gap: 8px; padding: 8px 10px; background: var(--soft); border-radius: 14px; }
+.upill { color: #fff; border-radius: 999px; padding: 2px 10px; font-weight: 800; font-size: 12px; }
+.udot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+.examlist { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow: auto; }
+.examlist li > span, .examlist li { display: flex; gap: 8px; align-items: flex-start; }
+.examlist li { display: list-item; }
+.examlist li span.grow { display: inline-block; width: calc(100% - 30px); }
+
+/* ── Portal da professora v2: perfil, menu em pílulas por grupo, cabeçalho com pílulas ── */
+.teacher { grid-template-columns: 264px 1fr; }
+.tside { background: radial-gradient(120% 60% at 0% 0%, #17224A 0%, var(--navy) 60%); gap: 4px; padding: 18px 14px; }
+.tprofile { display: flex; align-items: center; gap: 12px; border: 0; background: rgba(255,255,255,.06); color: #fff; border-radius: 22px; padding: 10px 12px; text-align: left; margin-bottom: 10px; }
+.tprofile:hover { background: rgba(255,255,255,.1); }
+.tprofile b { display: block; font: 800 19px/1.1 var(--f-display); }
+.tbadge { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #0A0F1F; background: #8FB0FF; border-radius: 999px; padding: 2px 9px; }
+.tavatar { border-radius: 50%; display: grid; place-items: center; flex: none; overflow: hidden; color: #fff; font-family: var(--f-display); font-weight: 800; background: linear-gradient(135deg, #1F5AE2, #6D8CFF); box-shadow: 0 0 0 3px rgba(143,176,255,.35); }
+.tavatar img { width: 100%; height: 100%; object-fit: cover; }
+.navgroup { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+.navlbl { font-size: 10.5px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: #6E76A6; padding: 4px 14px; }
+.tside button.nav { border-radius: 999px; padding: 9px 14px; font-size: 14.5px; }
+.tside button.nav[aria-current='true'] { background: #fff; color: var(--navy); box-shadow: 0 4px 14px rgba(31,90,226,.35); }
+.tside button.nav[aria-current='true'] span { filter: none; }
+.tmain { gap: 20px; }
+.hero { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: linear-gradient(120deg, #0A0F1F 0%, #1A2C6E 60%, #1F5AE2 100%); color: #fff; border-radius: 28px; padding: 22px 24px; position: relative; overflow: hidden; }
+.hero::after { content: ''; position: absolute; right: -40px; top: -60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,201,60,.18); }
+.hero h1 { font-size: 32px; color: #fff; }
+.hero .eyebrow { color: #8FB0FF; font-size: 12px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; }
+.hpill { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 800; position: relative; z-index: 1; }
+.card { box-shadow: 0 1px 0 rgba(10,15,31,.02), 0 8px 24px rgba(10,15,31,.04); }
+.ttabs { border-bottom: 0; gap: 6px; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 5px; width: fit-content; max-width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+.ttabs button { border: 0; border-radius: 999px; margin: 0; padding: 8px 14px; white-space: nowrap; }
+.ttabs button[aria-current='true'] { background: var(--navy); color: #fff; }
+@media (max-width: 900px) {
+  .tprofile, .navlbl { display: none; }
+  .navgroup { flex-direction: row; margin: 0; }
+  .tside { background: var(--navy); }
+  .hero h1 { font-size: 24px; }
+}
+.kpis { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+
+/* ── Trilha em cobra: nós menores e mais espaçados, caminho curvo, unit atual em destaque pela cor ── */
+.uband { background: var(--c); position: relative; }
+.uband[style*='--c']:not(.current):not(.locked) { background: color-mix(in srgb, var(--c) 14%, #fff); color: color-mix(in srgb, var(--c) 72%, #000); border: 2px solid color-mix(in srgb, var(--c) 30%, #fff); }
+.uband.current { box-shadow: 0 8px 0 color-mix(in srgb, var(--c) 70%, #000), 0 14px 30px color-mix(in srgb, var(--c) 40%, transparent); transform: translateY(-2px); }
+.uband.current::after { content: ''; position: absolute; inset: -6px; border-radius: 24px; border: 3px solid var(--c); opacity: .5; animation: pulse 2s ease-in-out infinite; pointer-events: none; }
+.uband .youhere { display: inline-block; margin-top: 6px; background: #fff; color: var(--c); font-weight: 800; font-size: 12px; border-radius: 999px; padding: 3px 10px; }
+.uband.finished:not(.current) h2::after { content: ' ✓'; }
+.nodes { position: relative; gap: 0; padding-block: 6px 2px; }
+.nodes .snake { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); pointer-events: none; }
+.node-wrap { flex-direction: column; justify-content: flex-start; gap: 4px; height: 104px; width: 150px; max-width: none; position: relative; z-index: 1; }
+.node { width: 60px; height: 56px; font-size: 23px; margin-top: 8px; }
+.node.done, .node.todo { box-shadow: 0 6px 0 color-mix(in srgb, var(--c, #000) 65%, #000); }
+.node.next { transform: scale(1.12); }
+.node.next::after { inset: -8px; border-color: var(--c, var(--t)); }
+.node .startflag { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: #fff; color: var(--c); border: 2px solid var(--c); font: 800 12px var(--f-display); border-radius: 999px; padding: 2px 10px; white-space: nowrap; animation: bob 1.6s ease-in-out infinite; }
+.node-info { text-align: center; width: 150px; }
+.node-info b { font-size: 12.5px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.node-info span { font-size: 11px; color: var(--mute); }
+@keyframes bob { 50% { transform: translateX(-50%) translateY(-4px); } }
+.node-info b, .node-info span { background: var(--soft); border-radius: 6px; padding: 0 5px; }
+.node-info b { display: inline-block; max-width: 150px; vertical-align: top; } .node-info span { display: inline-block; }
+.examrow b.grow { min-width: 70px; } .examrow .chipbtn { white-space: nowrap; }
+.seg { display: inline-flex; gap: 4px; flex-wrap: wrap; background: #fff; border: 1.5px solid var(--line); border-radius: 999px; padding: 4px; width: fit-content; max-width: 100%; }
+.seg button { border: 0; background: none; border-radius: 999px; padding: 8px 14px; font-weight: 800; color: var(--mute); }
+.seg button:hover:not([aria-pressed='true']) { background: var(--soft); color: var(--ink); }
+.seg button[aria-pressed='true'] { background: var(--navy); color: #fff; }
+.seg button.pink[aria-pressed='true'] { background: #E8458B; }
+.seg button.blue[aria-pressed='true'] { background: #1F5AE2; }
+.examlist li { display: list-item; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.examlist li > span.grow { display: inline-block; width: calc(100% - 34px); vertical-align: top; }

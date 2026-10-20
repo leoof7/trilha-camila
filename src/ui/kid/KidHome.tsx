@@ -10,6 +10,9 @@ import { ClassBar } from '../teacher/ClassFlow';
 import { bestQuiz, bestStars, lessonDone, nextLesson, unitOpen, unitProgress } from './progress';
 import { letter, LETTER_TEXT, average } from '../../engine/grade';
 
+const SNAKE = [0, 58, 86, 58, 0, -58, -86, -58];
+const NODE_H = 104;
+
 export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: string; tab?: 'trail' | 'album' | 'me' | 'book'; withTeacher?: boolean }) {
   const { db, go } = useApp();
   const s = db.students.find((x) => x.id === studentId);
@@ -64,24 +67,35 @@ function Trail({ studentId, withTeacher, todayN }: { studentId: string; withTeac
   const nodeFor = (unitId: number, l: Lesson, i: number, open: boolean, color: string) => {
     const done = lessonDone(db, studentId, l.id);
     const isNext = nxt?.lessonId === l.id;
-    const offs = [0, 46, 70, 46, 0, -46, -70][i % 7];
     return (
-      <div key={l.id} className="node-wrap" style={{ transform: `translateX(${offs}px)` }}>
+      <div key={l.id} className="node-wrap" style={{ transform: `translateX(${SNAKE[i % SNAKE.length]}px)` }}>
         <button
           className={`node ${open ? (done ? 'done' : 'todo') : 'lock'}${isNext ? ' next' : ''}`}
-          style={{ background: done ? color : open ? color : undefined, opacity: open && !done && !isNext ? 0.75 : 1 }}
+          style={{ background: done || isNext ? color : open ? `color-mix(in srgb, ${color} 45%, #fff)` : undefined, ['--c' as string]: color }}
           disabled={!open}
           onClick={() => play(unitId, l.id)}
           aria-label={`${l.title}${done ? ', feita' : ''}`}
         >
           {done ? '✓' : KIND_ICON[l.kind]}
+          {isNext && <span className="startflag">Start</span>}
         </button>
         <div className="node-info">
           <b>{l.title}</b>
-          <span>{KIND_LABEL[l.kind]} · {l.ref.printed ? `p. ${l.ref.printed}` : 'Apostila'}</span>
-          {done && <div className="starrow" aria-label={`${bestStars(db, studentId, l.id)} estrelas`}>{'⭐'.repeat(bestStars(db, studentId, l.id))}</div>}
+          <span>{l.ref.printed ? `p. ${l.ref.printed}` : KIND_LABEL[l.kind]}{done ? ` · ${'★'.repeat(bestStars(db, studentId, l.id))}` : ''}</span>
         </div>
       </div>
+    );
+  };
+  const snakePath = (lessons: Lesson[], color: string) => {
+    const pts = lessons.map((_, i) => [120 + SNAKE[i % SNAKE.length], i * NODE_H + 36]);
+    const seg = (a: number[], b: number[]) => `M${a[0]},${a[1]} C${a[0]},${a[1] + NODE_H / 2} ${b[0]},${b[1] - NODE_H / 2} ${b[0]},${b[1]}`;
+    return (
+      <svg className="snake" width="240" height={lessons.length * NODE_H} aria-hidden="true">
+        {pts.slice(1).map((b, i) => {
+          const done = lessonDone(db, studentId, lessons[i].id) && lessonDone(db, studentId, lessons[i + 1].id);
+          return <path key={i} d={seg(pts[i], b)} fill="none" stroke={done ? color : '#D9DBE8'} strokeWidth="10" strokeLinecap="round" strokeDasharray={done ? undefined : '2 16'} />;
+        })}
+      </svg>
     );
   };
 
@@ -107,17 +121,20 @@ function Trail({ studentId, withTeacher, todayN }: { studentId: string; withTeac
           const quiz = bestQuiz(db, studentId, u.id);
           const quizOpen = open; // provinha: sempre com a professora (modo aula ou senha)
           const rv = REVIEWS.find((r) => r.afterUnit === u.id);
+          const isCur = nxt?.unitId === u.id;
           return (
             <section key={u.id} className="col" style={{ gap: 18 }}>
-              <div className={`uband${open ? '' : ' locked'}`} style={{ background: u.color }}>
+              <div className={`uband${open ? '' : ' locked'}${isCur ? ' current' : ''}${prog.done === prog.total ? ' finished' : ''}`} style={{ ['--c' as string]: u.color }}>
                 <div>
                   <small>Unit {String(u.id).padStart(2, '0')} · {open ? `${prog.done}/${prog.total} lições` : 'bloqueada'}</small>
                   <h2>{u.title}</h2>
+                  {isCur && <span className="youhere">📍 Você está aqui</span>}
                 </div>
-                <span className="uemoji" aria-hidden="true">{open ? u.emoji : '🔒'}</span>
+                <span className="uemoji" aria-hidden="true">{!open ? '🔒' : prog.done === prog.total ? '✅' : u.emoji}</span>
               </div>
               {open && (
                 <div className="nodes">
+                  {snakePath(u.lessons, u.color)}
                   {u.lessons.map((l, i) => nodeFor(u.id, l, i, true, u.color))}
                   <button className={`quiznode${quizOpen ? '' : ' lock'}`} style={{ borderColor: u.color }} disabled={!quizOpen} onClick={() => (withTeacher ? play(u.id, `quiz-u${u.id}`, 'quiz') : setQuizAsk(u.id))}>
                     <span className="big">{quiz ? '🏆' : '📝'}</span>
@@ -214,7 +231,7 @@ function Me({ studentId }: { studentId: string }) {
         {grades.map((g) => (
           <div key={g.id} className="gradecard">
             <LetterBadge points={g.points} scale={db.settings.scale} sm />
-            <div className="grow"><b>{g.title}</b><p className="small mute">{fmtDate(g.date)} · {g.source === 'provinha' ? 'Provinha no app' : g.source === 'homework' ? 'Homework' : 'Nota da Camila'}</p></div>
+            <div className="grow"><b>{g.title}</b><p className="small mute">{fmtDate(g.date)} · {g.source === 'provinha' ? 'Provinha no app' : g.source === 'prova' ? 'Prova do caderno' : g.source === 'homework' ? 'Homework' : 'Nota da Camila'}</p></div>
             <b className="tnum">{g.points}</b>
           </div>
         ))}
@@ -241,7 +258,7 @@ function QuizGate({ unitId, onOk, onClose }: { unitId: number; onOk: () => void;
           {bad && <p className="err">Senha errada.</p>}
         </>
       ) : (
-        <p>A provinha é feita com a {db.settings.teacherName}. Para liberar aqui, ela precisa criar uma senha em <b>Configurações</b>. Na aula, use <b>“Abrir aula com {db.students[0]?.name ?? 'a aluna'}”</b>, que já libera a provinha.</p>
+        <p>A provinha é feita com a {db.settings.teacherName}. Para liberar aqui, ela precisa criar uma senha em <b>Configurações</b>. Na aula, a professora toca em <b>Iniciar aula</b> e a provinha já fica liberada.</p>
       )}
       <button className="btn ghost" onClick={onClose}>Voltar</button>
     </Modal>
@@ -265,8 +282,12 @@ function MyClasses({ studentId }: { studentId: string }) {
           <span className={`pill ${c.attendance[studentId] === 'P' ? 'p-ok' : c.attendance[studentId] === 'J' ? 'p-away' : 'p-help'}`}>{c.attendance[studentId] === 'P' ? 'Presente' : c.attendance[studentId] === 'J' ? 'Justificada' : 'Falta'}</span>
           <div className="grow">
             <b>{fmtDate(c.date)}{c.start ? ` · ${c.start}` : ''}</b>
-            {c.notes && <p className="small">{c.notes}</p>}
-            {c.nextGoal && <p className="small">🎯 {c.nextGoal}</p>}
+            {c.attendance[studentId] === 'P' ? (
+              <>
+                {c.notes && <p className="small">{c.notes}</p>}
+                {c.nextGoal && <p className="small">🎯 {c.nextGoal}</p>}
+              </>
+            ) : <p className="small mute">Você não veio nesta aula.</p>}
           </div>
         </div>
       ))}

@@ -4,7 +4,7 @@ import { Avatar, LetterBadge, Modal, fmtDate, toast } from '../common';
 import { StudentFields, GuardiansFields } from '../Profiles';
 import type { Student, Gender, Guardian } from '../../store/types';
 import { uid } from '../../store/db';
-import { UNITS, unitById, KIND_LABEL } from '../../content';
+import { UNITS, unitById, KIND_LABEL, findLesson } from '../../content';
 import { attendance, gradeAvg, statusOf, weakItems } from './stats';
 import { bestQuiz, bestStars, lessonDone, unitProgress } from '../kid/progress';
 import { STICKERS, dayKey } from '../../engine/game';
@@ -79,7 +79,7 @@ export function StudentFile({ id, open }: { id: string; open: (tab: string, sid?
           <p className="mute">{s.age} anos · {studentXp(db, s.id)} XP</p>
           {(s.guardians ?? []).length > 0 && <p className="small">{s.guardians!.map((g) => `${g.role === 'mae' ? 'Mãe' : g.role === 'pai' ? 'Pai' : 'Responsável'}: ${g.name}${g.phone ? ` · ${g.phone}` : ''}`).join('   ·   ')}</p>}
         </div>
-        <button className="btn navy" style={{ boxShadow: '0 5px 0 #171A45' }} onClick={() => go({ name: 'kid', studentId: s.id, withTeacher: true })}>▶ Abrir aula com {s.name}</button>
+        <button className="btn navy" style={{ boxShadow: '0 5px 0 #171A45' }} onClick={() => go({ name: 'kid', studentId: s.id, withTeacher: true })}>▶ Trilha de {s.name} (modo aula)</button>
       </div>
       <div className="ttabs" role="tablist">
         {tabs.map(([k, l]) => <button key={k} role="tab" aria-current={tab === k} onClick={() => setTab(k)}>{l}</button>)}
@@ -98,8 +98,31 @@ export function StudentFile({ id, open }: { id: string; open: (tab: string, sid?
 function Progress({ id }: { id: string }) {
   const { db, update } = useApp();
   const s = db.students.find((x) => x.id === id)!;
+  const rs = db.results.filter((r) => r.studentId === id).sort((a, b) => b.at.localeCompare(a.at));
+  const tot = rs.reduce((a, r) => a + r.total, 0);
+  const first = rs.reduce((a, r) => a + r.correctFirst, 0);
+  const errs = rs.reduce((a, r) => a + r.mistakes, 0);
+  const lessons = new Set(rs.filter((r) => r.mode === 'lesson').map((r) => r.lessonId)).size;
+  const mins = Math.round(rs.reduce((a, r) => a + r.seconds, 0) / 60);
   return (
     <div className="col">
+      <div className="grid3 kpis">
+        <section className="card stat"><b>{lessons}</b><span>Lições feitas</span></section>
+        <section className="card stat"><b style={{ color: 'var(--ok)' }}>{tot ? Math.round((first / tot) * 100) : '—'}{tot ? '%' : ''}</b><span>Acertos de primeira ({first} de {tot})</span></section>
+        <section className="card stat"><b style={{ color: 'var(--bad)' }}>{errs}</b><span>Erros no total</span></section>
+        <section className="card stat"><b>{mins}</b><span>Minutos estudando</span></section>
+      </div>
+      <section className="card">
+        <h3>Últimas atividades</h3>
+        {rs.length === 0 ? <p className="mute">Quando {s.name} fizer lições, cada acerto e erro aparece aqui.</p> : (
+          <div className="table-wrap"><table className="t">
+            <thead><tr><th>Quando</th><th>Atividade</th><th>Acertos de primeira</th><th>Erros</th><th>Pontos</th><th>Onde</th></tr></thead>
+            <tbody>{rs.slice(0, 10).map((r) => (
+              <tr key={r.id}><td className="tnum">{fmtDate(r.date)}</td><td>{r.mode === 'quiz' ? (r.lessonId.startsWith('exam-') ? db.exams?.find((e) => `exam-${e.id}` === r.lessonId)?.title ?? 'Prova' : `Provinha · Unit ${r.unitId}`) : findLesson(r.lessonId)?.lesson.title}</td><td className="tnum">{r.correctFirst}/{r.total}</td><td className="tnum">{r.mistakes}</td><td className="tnum"><b>{r.points}</b></td><td>{r.withTeacher ? <span className="pill p-ok">Na aula</span> : <span className="pill p-away">Sozinh{s.gender === 'm' ? 'o' : 'a'}</span>}</td></tr>
+            ))}</tbody>
+          </table></div>
+        )}
+      </section>
       <section className="card">
         <div className="row wrap">
           <h3 className="grow">Unit liberada até</h3>
@@ -156,7 +179,7 @@ function Grades({ id }: { id: string }) {
           <div className="table-wrap"><table className="t">
             <thead><tr><th>Data</th><th>Avaliação</th><th>Pontos</th><th>Letra</th><th></th></tr></thead>
             <tbody>{gs.map((g) => (
-              <tr key={g.id}><td className="tnum">{fmtDate(g.date)}</td><td>{g.title}<div className="small mute">{g.source === 'provinha' ? 'Provinha no app' : g.source === 'homework' ? 'Homework' : 'Lançada por você'}</div></td><td className="tnum"><b>{g.points}</b></td><td><LetterBadge points={g.points} scale={db.settings.scale} sm /></td>
+              <tr key={g.id}><td className="tnum">{fmtDate(g.date)}</td><td>{g.title}<div className="small mute">{g.source === 'provinha' ? 'Provinha no app' : g.source === 'prova' ? 'Prova do caderno' : g.source === 'homework' ? 'Homework' : 'Lançada por você'}</div></td><td className="tnum"><b>{g.points}</b></td><td><LetterBadge points={g.points} scale={db.settings.scale} sm /></td>
                 <td><button className="link small" onClick={() => update((d) => ({ ...d, grades: d.grades.filter((x) => x.id !== g.id) }))}>remover</button></td></tr>
             ))}</tbody>
           </table></div>
@@ -301,7 +324,7 @@ function Data({ s, onArchive }: { s: Student; onArchive: () => void }) {
   return (
     <section className="card" style={{ maxWidth: 560 }}>
       <StudentFields value={v} onChange={setV} />
-      <div className="field" style={{ maxWidth: 260 }}><label htmlFor="spin">Senha do aluno (4 números, opcional)</label><input id="spin" className="input" inputMode="numeric" maxLength={4} value={v.pin ?? ''} onChange={(e) => setV({ ...v, pin: e.target.value.replace(/\D/g, '').slice(0, 4) || undefined })} placeholder="sem senha" /></div>
+      <div className="field" style={{ maxWidth: 320 }}><label htmlFor="spin">Senha do aluno</label><input id="spin" className="input" maxLength={20} value={v.pin ?? ''} onChange={(e) => setV({ ...v, pin: e.target.value || undefined })} placeholder={`padrão: ${v.name || s.name}`} /><span className="small mute">Vazio = a senha é o nome ({v.name || s.name}). Maiúscula e acento não importam.</span></div>
       <h3>Família</h3>
       <GuardiansFields value={fam} onChange={setFam} />
       <button className="btn navy" style={{ boxShadow: '0 5px 0 #171A45' }} onClick={() => { update((d) => ({ ...d, students: d.students.map((x) => (x.id === s.id ? { ...x, ...v, guardians: fam.filter((g) => g.name.trim()), name: (v.name || x.name).trim() } as Student : x)) })); toast('Dados salvos.'); }}>Salvar</button>

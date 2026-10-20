@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../state';
 import { findLesson, unitById, REVIEWS, allLessons, type Lesson } from '../../content';
-import { buildQuiz, prepareLesson, prepareItem, type KeyMap, type Prepared } from '../../engine/session';
-import { itemsWithIds } from '../../content';
+import { buildQuiz, buildExam, prepareLesson, prepareItem, type KeyMap, type Prepared } from '../../engine/session';
+import { itemById } from '../../content';
 import { HEARTS, lessonXp, STICKERS } from '../../engine/game';
 import { letter, LETTER_TEXT, stars as starsOf, toPoints } from '../../engine/grade';
 import { Exercise, TYPE_LABEL, type Verdict } from './Exercises';
@@ -20,7 +20,10 @@ const AUTO_NEXT = 3;
 
 export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { studentId: string; unitId: number; lessonId: string; mode: 'lesson' | 'quiz'; withTeacher?: boolean }) {
   const { db, go, saveResult, update } = useApp();
-  const draftKey = `${studentId}:${mode === 'quiz' ? `quiz-u${unitId}` : lessonId}`;
+  const exam = lessonId.startsWith('exam-') ? db.exams?.find((e) => `exam-${e.id}` === lessonId) : undefined;
+  const quizId = exam ? lessonId : `quiz-u${unitId}`;
+  const quizName = exam ? exam.title : `Provinha da Unit ${unitId}`;
+  const draftKey = `${studentId}:${mode === 'quiz' ? quizId : lessonId}`;
   const draft = db.drafts?.[draftKey];
   const [askResume, setAskResume] = useState(!!draft && draft.idx > 0);
   const s = db.students.find((x) => x.id === studentId)!;
@@ -32,7 +35,7 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
   const lesson: Lesson | null = found?.lesson ?? null;
   const reviewColor = REVIEWS.find((r) => r.lesson.id === lessonId)?.color;
 
-  const items = useMemo<Prepared[]>(() => (mode === 'quiz' ? buildQuiz(unit, who, keys) : prepareLesson(lesson!, unitId, who, keys)), [lessonId, mode]);
+  const items = useMemo<Prepared[]>(() => (mode === 'quiz' ? (exam ? buildExam(exam.itemIds, who, keys) : buildQuiz(unit, who, keys)) : prepareLesson(lesson!, unitId, who, keys)), [lessonId, mode]);
   const [phase, setPhase] = useState<'page' | 'play' | 'out' | 'end'>(mode === 'lesson' ? 'page' : 'play');
   const [queue, setQueue] = useState<Prepared[]>(items);
   const [idx, setIdx] = useState(0);
@@ -100,7 +103,7 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
     const st = starsOf(correctFirst / total);
     const xp = mode === 'quiz' ? Math.round(points / 2) + 10 : lessonXp(correctFirst, total, mistakes.current);
     const res = saveResult(
-      { studentId, lessonId: mode === 'quiz' ? `quiz-u${unitId}` : lessonId, unitId, mode, total, correctFirst, mistakes: mistakes.current, points, xp, stars: st, seconds: Math.round((Date.now() - started.current) / 1000), missed: [...missed.current], withTeacher },
+      { studentId, lessonId: mode === 'quiz' ? quizId : lessonId, unitId, mode, total, correctFirst, mistakes: mistakes.current, points, xp, stars: st, seconds: Math.round((Date.now() - started.current) / 1000), missed: [...missed.current], withTeacher },
       lesson?.kind ?? 'quiz',
     );
     sfx.win();
@@ -131,7 +134,7 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
     if (!draft) return setAskResume(false);
     const byId = new Map(items.map((it) => [it.id, it]));
     // provinha é sorteada: recupera as mesmas questões pelo id em toda a unit
-    for (const l of unit.lessons) for (const it of itemsWithIds(l)) if (!byId.has(it.id!) && draft.queue.includes(it.id!)) byId.set(it.id!, prepareItem(it, unitId, who, keys));
+    for (const id of draft.queue) if (!byId.has(id)) { const f = itemById(id); if (f) byId.set(id, prepareItem(f.item, f.unitId, who, keys)); }
     const q = draft.queue.map((id) => byId.get(id)).filter(Boolean) as Prepared[];
     setQueue(q.length ? q : items); setIdx(Math.min(draft.idx, q.length - 1)); setHearts(draft.hearts);
     firstTry.current = draft.firstTry; missed.current = new Set(draft.missed); mistakes.current = draft.mistakes;
@@ -155,7 +158,7 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
           <div className="result pad">
             <Mascot size={140} mood="listen" say="Welcome back!" />
             <h1 style={{ fontSize: 30 }}>Você parou no meio!</h1>
-            <p className="mute">Faltavam {Math.max(0, draft.queue.length - draft.idx)} exercícios em “{lesson?.title ?? `Provinha da Unit ${unitId}`}”.</p>
+            <p className="mute">Faltavam {Math.max(0, draft.queue.length - draft.idx)} exercícios em “{lesson?.title ?? quizName}”.</p>
             <button className="btn block up" onClick={resume}>Continuar de onde parei</button>
             <button className="btn block ghost" onClick={() => { clearDraft(); setAskResume(false); }}>Começar do início</button>
           </div>
@@ -173,7 +176,7 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
             <div className="stage pad">
               <div className="col" style={{ gap: 6 }}>
                 <div className="row" style={{ justifyContent: 'space-between' }}>
-                  <span className="kind">{mode === 'quiz' ? `Provinha · Unit ${unitId}` : TYPE_LABEL[ex.t]}</span>
+                  <span className="kind">{mode === 'quiz' ? (exam ? exam.title : `Provinha · Unit ${unitId}`) : TYPE_LABEL[ex.t]}</span>
                   <div className="row" style={{ gap: 6 }}>
                     {idx > 0 && <button className="chipbtn" onClick={back} aria-label="Voltar ao exercício anterior">‹ Voltar</button>}
                     {mode === 'lesson' && <button className="chipbtn help" onClick={() => setHelp(!help)} aria-expanded={help}>💡 Ajuda</button>}
@@ -253,7 +256,7 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
             <div className="bigstars" aria-label={`${summary.stars} estrelas`}>
               {[1, 2, 3].map((i) => <span key={i} className={i <= summary.stars ? '' : 'off'}>⭐</span>)}
             </div>
-            <h1>{mode === 'quiz' ? 'Provinha feita!' : 'Lição completa!'}</h1>
+            <h1>{mode === 'quiz' ? (exam ? 'Prova feita!' : 'Provinha feita!') : 'Lição completa!'}</h1>
             <p style={{ fontSize: 18, fontWeight: 700 }}>{summary.stars === 3 ? `Incrível, ${s.name}!` : summary.stars === 2 ? `Muito bem, ${s.name}!` : `Boa, ${s.name}! Vamos treinar mais?`}</p>
             <div className="rchips">
               <div className="rchip" style={{ borderColor: 'var(--yellow)', color: '#8A6400' }}><span>XP</span><b>+{summary.xp}</b></div>

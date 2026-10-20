@@ -87,3 +87,24 @@ describe('enunciados em inglês e português', () => {
       }
   });
 });
+
+import { pickExamItems, buildExam, examFriendly } from '../src/engine/session';
+import { itemById } from '../src/content';
+describe('prova da professora', () => {
+  it('sorteia só das units escolhidas, sem repetir, sem fala nem áudio', () => {
+    const ids = pickExamItems([2, 5], 12);
+    expect(ids.length).toBe(12);
+    expect(new Set(ids).size).toBe(12);
+    for (const id of ids) {
+      const f = itemById(id)!;
+      expect([2, 5]).toContain(f.unitId);
+      expect(examFriendly(f.item)).toBe(true);
+    }
+    expect(ids.some((id) => itemById(id)!.unitId === 2) && ids.some((id) => itemById(id)!.unitId === 5)).toBe(true);
+  });
+  it('monta os exercícios com o nome do aluno', () => {
+    const ex = buildExam(pickExamItems([1], 8), { name: 'Anne', age: 9 });
+    expect(ex.length).toBe(8);
+    expect(JSON.stringify(ex)).not.toContain('{name}');
+  });
+});

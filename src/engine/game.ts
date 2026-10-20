@@ -77,3 +77,12 @@ export function studentStatus(lastActive: string | null, recentAccuracy: number[
   }
   return { s: 'ok', label: 'Em dia' };
 }
+
+/** Senha do aluno: por padrão é o próprio nome (sem diferença de maiúscula ou acento). Se a professora criou outra, vale a dela. */
+export function studentPassword(s: { name: string; pin?: string }) {
+  return (s.pin && s.pin.trim()) || s.name;
+}
+const fold = (x: string) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+export function passwordOk(s: { name: string; pin?: string }, typed: string) {
+  return fold(typed) !== '' && fold(typed) === fold(studentPassword(s));
+}

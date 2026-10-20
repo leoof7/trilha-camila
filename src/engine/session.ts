@@ -1,7 +1,7 @@
 // Monta a lição: personaliza com o nome do aluno, aplica o gabarito revisado pela Camila,
 // gera opções e banco de palavras (sempre com palavras da própria unit).
 import type { Ex, Lesson, Unit } from '../content/types';
-import { itemsWithIds, unitById, UNITS } from '../content';
+import { itemsWithIds, unitById, UNITS, itemById } from '../content';
 import { personalizeDeep, type Who } from './personalize';
 import { distractors, shuffle, tiles } from './check';
 
@@ -75,4 +75,25 @@ export function suggestedKeyItems() {
     for (const l of u.lessons)
       for (const it of itemsWithIds(l)) if (it.s) out.push({ unitId: u.id, lessonTitle: l.title, item: it as Ex & { id: string } });
   return out;
+}
+
+/** Prova da professora: exercícios que funcionam no app e no papel (sem fala e sem áudio). */
+export const examFriendly = (it: Ex) => it.t !== 'speak' && it.t !== 'hear' && !(it.t === 'scramble' && it.a.includes('{'));
+
+export function pickExamItems(unitIds: number[], size: number, rnd: () => number = Math.random): string[] {
+  const pool = UNITS.filter((u) => unitIds.includes(u.id)).flatMap((u) => u.lessons.flatMap((l) => itemsWithIds(l))).filter(examFriendly);
+  // espalha entre as units escolhidas
+  const byUnit = unitIds.map((uid) => shuffle(pool.filter((it) => unitById(uid).lessons.some((l) => it.id!.startsWith(`${l.id}#`))), rnd));
+  const out: string[] = [];
+  for (let i = 0; out.length < Math.min(size, pool.length); i++) {
+    const col = byUnit[i % byUnit.length];
+    const nx = col.shift();
+    if (nx && !out.includes(nx.id!)) out.push(nx.id!);
+    if (byUnit.every((c) => !c.length)) break;
+  }
+  return out;
+}
+
+export function buildExam(itemIds: string[], who: Who, keys: KeyMap = {}, rnd: () => number = Math.random): Prepared[] {
+  return itemIds.map((id) => itemById(id)).filter(Boolean).map((x) => prepareItem(x!.item, x!.unitId, who, keys, rnd));
 }

@@ -8,14 +8,17 @@ import { useState } from 'react';
 import { ClassForm } from './Classes';
 import { uid } from '../../store/db';
 import type { ClassRecord, Presence } from '../../store/types';
-import { StartClass, useActiveClass, FinishClass } from './ClassFlow';
+import { StartClass, useActiveClass, FinishClass, planLabel } from './ClassFlow';
+import { ThanksCard } from './ThanksCard';
 import { Mascot } from '../Mascot';
+import { TeacherAvatar } from './TeacherAvatar';
 
 export function Dashboard({ open }: { open: (tab: string, sid?: string) => void }) {
   const { db, go, update } = useApp();
   const active = useActiveClass();
   const [starting, setStarting] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [card, setCard] = useState<ClassRecord | null>(null);
   const students = db.students.filter((s) => !s.archived);
   const today = dayKey();
   const todayClass = db.classes.find((c) => c.date === today && c.status !== 'aberta');
@@ -26,10 +29,17 @@ export function Dashboard({ open }: { open: (tab: string, sid?: string) => void 
 
   return (
     <>
-      <div className="thead">
+      <div className="hero">
+        <TeacherAvatar size={64} />
         <div className="grow">
           <div className="eyebrow">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
           <h1>{greeting}, {db.settings.teacherName}!</h1>
+          <div className="row wrap" style={{ gap: 6, marginTop: 8 }}>
+            <span className="hpill">👧 {students.length} {students.length === 1 ? 'aluno' : 'alunos'}</span>
+            <span className="hpill">📅 {db.classes.filter((c) => c.date.slice(0, 7) === today.slice(0, 7)).length} aulas no mês</span>
+            <span className="hpill">🏆 {(db.exams ?? []).length} no caderno de provas</span>
+            <span className="hpill">✏️ {db.results.filter((r) => r.date === today).length} atividades hoje</span>
+          </div>
         </div>
       </div>
 
@@ -40,6 +50,19 @@ export function Dashboard({ open }: { open: (tab: string, sid?: string) => void 
             <>
               <h2>🟢 Aula em andamento desde {active.start}</h2>
               <p className="mute">{Object.values(active.attendance).filter((p) => p === 'P').length} presente(s) · {active.modality === 'online' ? 'online' : 'presencial'}. Abra a trilha do aluno: tudo fica liberado e o que ele fizer entra no registro da aula.</p>
+              {(active.plan ?? []).length > 0 && (
+                <div className="col" style={{ gap: 6 }}>
+                  <span className="lbl">Plano de hoje</span>
+                  <div className="lessonpick">
+                    {active.plan!.map((id) => {
+                      const sid = students.find((s) => active.attendance[s.id] === 'P')?.id;
+                      const f = findLesson(id);
+                      const done = sid && db.results.some((r) => r.studentId === sid && r.lessonId === id && active.startedAt && r.at >= active.startedAt);
+                      return <button key={id} aria-pressed={!!done} disabled={!sid} onClick={() => sid && go(id.startsWith('quiz-u') ? { name: 'play', studentId: sid, unitId: Number(id.slice(6)), lessonId: id, mode: 'quiz', withTeacher: true } : { name: 'play', studentId: sid, unitId: f!.unitId, lessonId: id, mode: 'lesson', withTeacher: true })}>{done ? '✓ ' : '▶ '}{planLabel(id)}</button>;
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="row wrap">
                 {students.filter((s) => active.attendance[s.id] === 'P').map((s) => (
                   <button key={s.id} className="btn blue sm" onClick={() => go({ name: 'kid', studentId: s.id, withTeacher: true })}>▶ Trilha de {s.name}</button>
@@ -50,9 +73,9 @@ export function Dashboard({ open }: { open: (tab: string, sid?: string) => void 
           ) : todayClass ? (
             <>
               <h2>✓ Aula de hoje registrada</h2>
-              <p className="mute">{todayClass.start}{todayClass.end ? `–${todayClass.end}` : ''} · {todayClass.lessons.map((l) => findLesson(l)?.lesson.title).filter(Boolean).join(', ') || 'sem lições marcadas'}</p>
+              <p className="mute">{todayClass.start}{todayClass.end ? `–${todayClass.end}` : ''} · {(() => { const t = todayClass.lessons.map((l) => findLesson(l)?.lesson.title).filter(Boolean); return t.length ? `${t.slice(0, 5).join(', ')}${t.length > 5 ? ` e mais ${t.length - 5}` : ''}` : 'sem lições marcadas'; })()}</p>
               {todayClass.notes && <p className="small">“{todayClass.notes}”</p>}
-              <div className="row wrap"><button className="btn ghost sm" onClick={() => setForm(todayClass)}>Ver ou editar</button><button className="btn blue sm" onClick={() => setStarting(true)}>▶ Iniciar outra aula</button></div>
+              <div className="row wrap"><button className="btn wa sm" onClick={() => setCard(todayClass)}>💬 Card para os pais</button><button className="btn ghost sm" onClick={() => setForm(todayClass)}>Ver ou editar</button><button className="btn blue sm" onClick={() => setStarting(true)}>▶ Iniciar outra aula</button></div>
             </>
           ) : noClass ? (
             <>
@@ -73,7 +96,8 @@ export function Dashboard({ open }: { open: (tab: string, sid?: string) => void 
         </div>
       </section>
       {starting && <StartClass onClose={() => setStarting(false)} />}
-      {finishing && active && <FinishClass c={active} onClose={() => setFinishing(false)} />}
+      {finishing && active && <FinishClass c={active} onClose={() => setFinishing(false)} onDone={setCard} />}
+      {card && <ThanksCard c={card} onClose={() => setCard(null)} />}
 
       <div className="grid2">
         {students.map((s) => {

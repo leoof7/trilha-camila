@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../../state';
-import { Avatar, Modal, fmtDate, toast } from '../common';
+import { Avatar, Modal, fmtDate, toast, PresencePick } from '../common';
 import type { ClassRecord, Presence } from '../../store/types';
 import { uid } from '../../store/db';
 import { UNITS, REVIEWS, findLesson, refLabel } from '../../content';
@@ -85,11 +85,7 @@ export function ClassForm({ value, onClose }: { value: ClassRecord; onClose: () 
         {students.map((s) => (
           <div key={s.id} className="row" style={{ justifyContent: 'space-between' }}>
             <span className="row"><Avatar s={s} size={32} /><b>{s.name}</b></span>
-            <div className="presence">
-              {(['P', 'F', 'J'] as Presence[]).map((p) => (
-                <button key={p} className={p} aria-pressed={c.attendance[s.id] === p} onClick={() => setC({ ...c, attendance: { ...c.attendance, [s.id]: p } })}>{p === 'P' ? 'Presente' : p === 'F' ? 'Falta' : 'Justificada'}</button>
-              ))}
-            </div>
+            <PresencePick value={c.attendance[s.id]} onChange={(p) => setC({ ...c, attendance: { ...c.attendance, [s.id]: p } })} />
           </div>
         ))}
       </div>

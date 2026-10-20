@@ -38,6 +38,11 @@ export async function pull(): Promise<{ data: DB; updated_at: string } | null> {
   return data as { data: DB; updated_at: string } | null;
 }
 
+/** Marca da última versão que este aparelho conhece (para saber se outro aparelho mudou algo). */
+export let lastStamp = '';
+export const hasPending = () => !!pending;
+export function markSeen(stamp: string) { lastStamp = stamp; }
+
 let timer: ReturnType<typeof setTimeout> | undefined;
 let pending: DB | null = null;
 export type SyncState = 'off' | 'saving' | 'saved' | 'offline';
@@ -50,8 +55,10 @@ async function flush() {
   if (!s) { listener('off'); return; }
   const db = pending;
   listener('saving');
-  const { error } = await sb().from('trilha_escola').upsert({ owner: s.user.id, data: db, updated_at: new Date().toISOString() });
+  const stamp = new Date().toISOString();
+  const { error } = await sb().from('trilha_escola').upsert({ owner: s.user.id, data: db, updated_at: stamp });
   if (error) { listener('offline'); timer = setTimeout(flush, 15000); return; }
+  lastStamp = stamp;
   if (pending === db) pending = null;
   listener('saved');
 }

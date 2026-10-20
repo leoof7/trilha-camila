@@ -121,3 +121,14 @@ link, várias turmas, Apostila 2.
 - **Modo aula (professora):** tudo liberado, pula exercício, lição anterior/próxima.
 - **Sair no meio:** o progresso fica salvo; ao voltar pergunta "Continuar de onde parei" ou "Começar do início".
 - **Banco com login (Supabase, conta lesetesistemas+camila):** professora entra com e-mail e senha; os dados da escola ficam numa linha protegida por RLS (`supabase/001_trilha.sql`). Sem internet salva no aparelho e sobe depois. "Usar sem conta" continua existindo.
+
+## 14. Versão 4 (20/10/2026, pedidos do Leandro)
+- **Entrada:** "Sou a professora" ou "Sou aluno(a)". A senha do aluno é o **próprio nome** por padrão (maiúscula e acento não importam). A professora pode trocar na ficha → Dados. Senha antiga de 4 números continua valendo.
+- **Aula:** "Tem aula hoje?" → Iniciar aula (data, hora, modalidade, presença e **plano da aula com sugestões**: próximas lições de cada aluno presente, lições onde mais erra e a provinha quando a unit acabou). Durante a aula a professora volta ao menu dela pelo botão **🏠 Meu menu**. Finalizar aula salva descrição, próximo objetivo e hora de fim.
+- **Card do dia para os pais** (só professora): imagem quadrada "Thank you!" + mensagem de agradecimento; enviar (celular), baixar, copiar, ou abrir o WhatsApp de cada responsável com a mensagem escrita. Só para quem estava presente.
+- **Presença:** Presente ou Falta; "justificada" é um detalhe dentro da falta. Quem faltou vê só a data e "Você não veio nesta aula" — sem descrição nem objetivo da aula.
+- **Caderno de provas:** a professora cria provas escolhendo units e número de questões; o app sorteia só da apostila (sem fala e sem áudio). Cada prova pode ser aplicada no app (vira nota "Prova do caderno", não libera unit) ou impressa/baixada como folha bonita para os pais (com espaço de nota, feedback e assinatura) e uma versão com gabarito.
+- **Ficha do aluno:** Progresso mostra lições feitas, % de acerto de primeira, total de erros, minutos e as últimas atividades com acertos/erros. O robô confere que erros, notas, provas, presença e objetivos aparecem na ficha.
+- **Portal da professora:** foto de perfil, menu em pílulas por grupo (Dia a dia, Material, Caderneta), cabeçalho com resumo.
+- **Trilha:** caminho em cobra (curvas), nós menores e mais espaçados, a unit atual em cor cheia com "Você está aqui"; as outras ficam em tom claro.
+- **Nuvem ao vivo:** com conta, cada aparelho confere a cada 6 s (e ao voltar para a tela) se outro aparelho salvou algo mais novo e atualiza sozinho. Lição pela metade continua de onde parou em qualquer aparelho.
