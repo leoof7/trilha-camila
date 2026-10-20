@@ -65,6 +65,26 @@ export function Confetti() {
   );
 }
 
+/** Estrelinhas explodindo do centro (fim de lição) e chuva de estrelas (unit completa). */
+export function StarBurst({ big }: { big?: boolean }) {
+  const n = big ? 36 : 18;
+  return (
+    <>
+      <div className="starburst" aria-hidden="true">
+        {Array.from({ length: n }).map((_, i) => {
+          const ang = (i / n) * Math.PI * 2, dist = 140 + (i % 4) * 45;
+          return <i key={i} style={{ ['--dx' as string]: `${Math.cos(ang) * dist}px`, ['--dy' as string]: `${Math.sin(ang) * dist}px`, ['--rot' as string]: `${(i % 2 ? 1 : -1) * 220}deg`, animationDelay: `${(i % 6) * 0.04}s` }}>{i % 5 === 0 ? '🌟' : '⭐'}</i>;
+        })}
+      </div>
+      {big && (
+        <div className="starburst starrain" aria-hidden="true">
+          {Array.from({ length: 40 }).map((_, i) => <i key={i} style={{ left: `${(i * 23) % 100}%`, fontSize: 18 + (i % 4) * 8, animationDelay: `${0.4 + (i % 10) * 0.12}s` }}>{['⭐', '🌟', '✨', '💫'][i % 4]}</i>)}
+        </div>
+      )}
+    </>
+  );
+}
+
 export function Ring({ pct, color }: { pct: number; color: string }) {
   const r = 24, c = 2 * Math.PI * r;
   return (

@@ -149,9 +149,10 @@ textarea.input { resize: vertical; min-height: 70px; }
 .chip { background: rgba(255,255,255,.2); border-radius: 99px; padding: 5px 11px; font-weight: 800; font-size: 14px; display: flex; gap: 5px; align-items: center; white-space: nowrap; }
 .xpbar { height: 10px; border-radius: 99px; background: rgba(255,255,255,.3); overflow: hidden; }
 .xpbar i { display: block; height: 100%; background: var(--yellow); border-radius: 99px; }
-.ktabs { position: sticky; bottom: 0; display: flex; background: #fff; border-top: 2px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); margin-top: auto; z-index: 5; }
-.ktabs button { flex: 1; border: 0; background: none; padding: 10px 4px 12px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 800; font-size: 12px; color: var(--mute); }
-.ktabs button span { font-size: 22px; filter: grayscale(1); opacity: .6; }
+.ktabs { display: flex; gap: 4px; background: #fff; border: 1.5px solid var(--line); border-radius: 20px; padding: 4px; margin: 12px max(16px, env(safe-area-inset-left, 0px)) 0; box-shadow: 0 4px 14px rgba(10,15,31,.05); }
+.ktabs button { flex: 1; border: 0; background: none; padding: 8px 4px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; gap: 1px; font-weight: 800; font-size: 12px; color: var(--mute); }
+.ktabs button[aria-current='true'] { background: var(--t-soft); }
+.ktabs button span { font-size: 20px; filter: grayscale(1); opacity: .6; }
 .ktabs button[aria-current='true'] { color: var(--t-d); }
 .ktabs button[aria-current='true'] span { filter: none; opacity: 1; }
 
@@ -505,3 +506,14 @@ table.t td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-al
 .exq { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
 .exline { font-size: 17px; font-weight: 700; }
 .exline mark { background: var(--t-soft); color: var(--t-ink); border-radius: 6px; padding: 0 6px; border-bottom: 3px solid var(--t); }
+
+/* ───────── comemorações ───────── */
+.starburst { position: fixed; inset: 0; pointer-events: none; z-index: 31; overflow: hidden; }
+.starburst i { position: absolute; left: 50%; top: 42%; font-style: normal; font-size: 26px; animation: burst 1.6s cubic-bezier(.15,.8,.3,1) forwards; opacity: 0; }
+@keyframes burst { 0% { transform: translate(-50%,-50%) scale(.2) rotate(0); opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1) rotate(var(--rot)); opacity: 0; } }
+.starrain i { position: absolute; top: -40px; font-style: normal; animation: rain 2.6s ease-in forwards; }
+@keyframes rain { to { transform: translateY(115vh) rotate(540deg); } }
+.unitdone { width: 100%; border-radius: 26px; color: #fff; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 6px; animation: pop .5s cubic-bezier(.2,1.6,.4,1); box-shadow: 0 14px 40px rgba(10,15,31,.18); }
+.unitdone b { font-family: var(--f-display); font-size: 28px; }
+.unitdone .trophy { font-size: 56px; animation: hop 1s ease-out 2; }
+@media (prefers-reduced-motion: reduce) { .starburst, .starrain { display: none; } }

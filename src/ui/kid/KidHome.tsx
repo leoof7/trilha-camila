@@ -37,18 +37,18 @@ export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: 
             <span className="chip" title="Figurinhas">🏅 {db.stickers.filter((x) => x.studentId === s.id).length}</span>
           </div>
         </header>
-
-        {tab === 'trail' && <Trail studentId={s.id} withTeacher={withTeacher} todayN={db.results.filter((r) => r.studentId === s.id && r.date === dayKey()).length} />}
-        {tab === 'album' && <Album studentId={s.id} />}
-        {tab === 'me' && <Me studentId={s.id} />}
-        {tab === 'book' && <main className="me pad"><ApostilaShelf name={s.name} color={s.gender === 'm' ? '#1F5AE2' : '#E8458B'} /></main>}
-
         <nav className="ktabs" aria-label="Seções">
           <button aria-current={tab === 'trail'} onClick={() => setTab('trail')}><span>🗺️</span>Trilha</button>
           <button aria-current={tab === 'book'} onClick={() => setTab('book')}><span>📖</span>Apostila</button>
           <button aria-current={tab === 'album'} onClick={() => setTab('album')}><span>🏅</span>Figurinhas</button>
           <button aria-current={tab === 'me'} onClick={() => setTab('me')}><span>📒</span>Minhas notas</button>
         </nav>
+
+        {tab === 'trail' && <Trail studentId={s.id} withTeacher={withTeacher} todayN={db.results.filter((r) => r.studentId === s.id && r.date === dayKey()).length} />}
+        {tab === 'album' && <Album studentId={s.id} />}
+        {tab === 'me' && <Me studentId={s.id} />}
+        {tab === 'book' && <main className="me pad"><ApostilaShelf name={s.name} color={s.gender === 'm' ? '#1F5AE2' : '#E8458B'} /></main>}
+
       </div>
     </div>
   );

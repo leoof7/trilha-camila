@@ -6,7 +6,7 @@ import { itemsWithIds } from '../../content';
 import { HEARTS, lessonXp, STICKERS } from '../../engine/game';
 import { letter, LETTER_TEXT, stars as starsOf, toPoints } from '../../engine/grade';
 import { Exercise, TYPE_LABEL, type Verdict } from './Exercises';
-import { Confetti, LetterBadge, RefTag } from '../common';
+import { LetterBadge, RefTag, StarBurst } from '../common';
 import { say, stopVoice, setDefaultSpeaker } from '../../lib/speech';
 import { sfx } from '../../lib/sound';
 import { askFor } from '../../content/instructions';
@@ -48,7 +48,7 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
   const missed = useRef<Set<string>>(new Set());
   const mistakes = useRef(0);
   const started = useRef(Date.now());
-  const [summary, setSummary] = useState<{ points: number; xp: number; stars: 1 | 2 | 3; stickers: string[]; streak: number } | null>(null);
+  const [summary, setSummary] = useState<{ points: number; xp: number; stars: 1 | 2 | 3; stickers: string[]; streak: number; unitDone?: boolean } | null>(null);
 
   const total = items.length;
   const doneCount = Object.keys(firstTry.current).length;
@@ -58,7 +58,9 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
   const exit = () => { stopVoice(); go({ name: 'kid', studentId, withTeacher }); };
   const all = allLessons();
   const pos = all.findIndex((x) => x.lesson.id === lessonId);
-  const nextL = mode === 'lesson' && pos >= 0 ? all[pos + 1] : undefined;
+  const nextRaw = mode === 'lesson' && pos >= 0 ? all[pos + 1] : undefined;
+  // fora do modo aula, só sugere a próxima se for da mesma unit (a próxima unit pode estar fechada)
+  const nextL = nextRaw && (withTeacher || nextRaw.unitId === unitId) ? nextRaw : undefined;
   const prevL = mode === 'lesson' && pos > 0 ? all[pos - 1] : undefined;
   const openL = (x?: { unitId: number; lesson: Lesson }) => { if (!x) return; stopVoice(); go({ name: 'play', studentId, unitId: x.unitId, lessonId: x.lesson.id, mode: 'lesson', withTeacher }); };
 
@@ -103,7 +105,11 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
     );
     sfx.win();
     clearDraft();
-    setSummary({ points, xp, stars: st, stickers: res.stickers, streak: res.streakDays });
+    // a unit inteira ficou completa com esta lição?
+    const doneIds = new Set(db.results.filter((r) => r.studentId === studentId && r.mode === 'lesson').map((r) => r.lessonId));
+    if (mode === 'lesson') doneIds.add(lessonId);
+    const unitDone = mode === 'lesson' && unit.lessons.every((l) => doneIds.has(l.id)) && !unit.lessons.every((l) => db.results.some((r) => r.studentId === studentId && r.lessonId === l.id));
+    setSummary({ points, xp, stars: st, stickers: res.stickers, streak: res.streakDays, unitDone });
     setPhase('end');
   };
 
@@ -235,8 +241,15 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
 
         {phase === 'end' && summary && (
           <div className="result pad">
-            <Confetti />
-            <Mascot size={150} mood="cheer" say={summary.stars === 3 ? 'Woof! Perfect!' : 'Good job!'} />
+            <StarBurst big={summary.unitDone} />
+            {summary.unitDone && (
+              <div className="unitdone" style={{ background: unit.color }}>
+                <span className="trophy">🏆</span>
+                <b>Unit {unit.id} completa!</b>
+                <span>{unit.title} · todas as lições feitas. Agora é a provinha com a {db.settings.teacherName}!</span>
+              </div>
+            )}
+            <Mascot size={150} mood="cheer" say={summary.unitDone ? 'Unit complete!' : summary.stars === 3 ? 'Woof! Perfect!' : 'Good job!'} />
             <div className="bigstars" aria-label={`${summary.stars} estrelas`}>
               {[1, 2, 3].map((i) => <span key={i} className={i <= summary.stars ? '' : 'off'}>⭐</span>)}
             </div>
