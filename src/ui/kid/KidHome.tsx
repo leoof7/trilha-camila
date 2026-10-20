@@ -26,7 +26,7 @@ export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: 
 
   return (
     <div className={`kid kid-${s.gender}`}>
-      <div className="kcol">
+      <div className="kcol khome">
         <div className="kleft">
         <header className="ktop pad">
           <div className="row">

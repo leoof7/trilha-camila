@@ -108,3 +108,41 @@ describe('prova da professora', () => {
     expect(JSON.stringify(ex)).not.toContain('{name}');
   });
 });
+
+import { meaningOf } from '../src/content/help';
+import { findLesson, itemsWithIds as iw } from '../src/content';
+describe('revisão módulo a módulo (20/10)', () => {
+  it('"desembaralhe" mostra o significado da palavra, nunca só a letra', () => {
+    expect(meaningOf('CAT')).toBe('gato');
+    expect(meaningOf('ZEBRA')).not.toBe('Z');
+    expect(meaningOf('PENCIL')).toBe('lápis');
+  });
+  it('PENCIL não pede "soletre o seu nome"; os itens do nome pedem', () => {
+    const p = iw(findLesson('u8-practice')!.lesson).find((x) => x.t === 'scramble' && x.a === 'PENCIL')!;
+    expect(askFor(p, 8).en).toBe('Unscramble the letters!');
+    const n = iw(findLesson('u4-homework')!.lesson).find((x) => x.t === 'scramble')!;
+    expect(askFor({ ...n, a: 'ANNE' } as typeof n, 4).en).toBe('Spell your name!');
+  });
+  it('exercício de situação usa o enunciado da apostila e mostra a situação num cartão', () => {
+    const it0 = iw(findLesson('u7-homework')!.lesson)[0];
+    const a = askFor(it0, 7);
+    expect(a.en).toContain('How many of each body part');
+    expect(a.scene?.en).toBe('fingers on both hands');
+  });
+  it('na revisão, figura de cor pergunta a cor (e não "Who is it?")', () => {
+    const rv = findLesson('review-1')!.lesson;
+    for (const x of iw(rv)) if (x.t === 'pic' && !x.q && ['blue', 'red', 'green', 'orange'].includes(x.a)) expect(askFor(x, 5).en).toBe('What color is it?');
+  });
+  it('nenhum título de exercício termina com dois-pontos', () => {
+    for (const { lesson, unitId } of allLessons())
+      for (const x of iw(lesson)) expect(askFor(x, unitId).en.trim().endsWith(':')).toBe(false);
+  });
+});
+describe('frase com instrução na frente', () => {
+  it('separa a instrução da frase para traduzir', async () => {
+    const { splitLead } = await import('../src/content/instructions');
+    expect(splitLead('Escreva sua apresentação: Meu nome é Anne.')).toEqual({ lead: 'Escreva sua apresentação', text: 'Meu nome é Anne.' });
+    expect(splitLead('Write a sentence with "is": Minha mochila é azul.').text).toBe('Minha mochila é azul.');
+    expect(splitLead('Bom dia!')).toEqual({ text: 'Bom dia!' });
+  });
+});

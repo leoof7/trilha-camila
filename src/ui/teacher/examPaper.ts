@@ -3,7 +3,7 @@
 import type { Exam, Student } from '../../store/types';
 import type { KeyMap, Prepared } from '../../engine/session';
 import { buildExam } from '../../engine/session';
-import { askFor } from '../../content/instructions';
+import { askFor, splitLead } from '../../content/instructions';
 import { refLabel, itemById, unitById } from '../../content';
 import { shuffle } from '../../engine/check';
 
@@ -24,14 +24,15 @@ const opts = (o: string[] = []) => `<div class="opts">${o.map((x) => `<span><i><
 const line = '<div class="line"></div>';
 
 function body(ex: Prepared, title = ''): string {
-  const q = (x: string) => (x.trim() === title.trim() ? '' : `<p class="q">${esc(x)}</p>`);
+  const strip = (t: string) => t.trim().replace(/[:…]$/, '').trim();
+  const q = (x: string) => (strip(x) === strip(title) ? '' : `<p class="q">${esc(x)}</p>`);
   switch (ex.t) {
     case 'match': {
       const right = shuffle(ex.pairs.map((p) => p[1]));
       return `<div class="match"><ol>${ex.pairs.map((p) => `<li>${esc(p[0])} <b>•</b></li>`).join('')}</ol><ol type="a">${right.map((r) => `<li><b>•</b> ${esc(r)}</li>`).join('')}</ol></div>`;
     }
     case 'pic': return `<div class="emoji">${ex.emoji}</div>${opts(ex.options)}`;
-    case 'build': return `${q(ex.q)}<div class="bank">${(ex.bank ?? []).map((w) => `<span>${esc(w)}</span>`).join('')}</div>${line}`;
+    case 'build': return `${splitLead(ex.q).lead ? `<p class="pt">${esc(splitLead(ex.q).lead!)}</p>` : ''}${q(splitLead(ex.q).text)}<div class="bank">${(ex.bank ?? []).map((w) => `<span>${esc(w)}</span>`).join('')}</div>${line}`;
     case 'fill': return `<p class="q">${esc(ex.q).replace(/_{2,}|\[\s*\]/g, '<u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>')}</p>${opts(ex.options)}`;
     case 'choice': return `${q(ex.q)}${opts(ex.options)}`;
     case 'scramble': return `<div class="bank letters">${(ex.bank ?? []).map((w) => `<span>${esc(w.toUpperCase())}</span>`).join('')}</div><div class="boxes">${ex.a.replace(/\s/g, '').split('').map(() => '<i></i>').join('')}</div>`;

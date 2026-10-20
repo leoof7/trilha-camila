@@ -99,7 +99,7 @@ export function LessonPage({ lesson, unit, onStart, extraColor, who }: { lesson:
   useEffect(() => () => stopVoice(), []);
   return (
     <>
-      <div className="stage pad">
+      <div className="stage lpage pad">
         <div className="pagehead" style={{ background: color }}>
           <span>Unit {String(unit.id).padStart(2, '0')} · {KIND_LABEL[lesson.kind]}</span>
           <h2>{lesson.title}</h2>
@@ -148,7 +148,7 @@ export function LessonPage({ lesson, unit, onStart, extraColor, who }: { lesson:
         )}
         <RefTag r={lesson.ref} />
       </div>
-      <div className="pfoot pad">
+      <div className="pfoot lstart pad">
         <Mascot size={72} say={lesson.kind === 'read' ? 'Story time!' : "Let's practice!"} />
         <button className="btn block up" onClick={() => { stopVoice(); onStart(); }}>Começar os exercícios</button>
       </div>

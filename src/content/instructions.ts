@@ -2,8 +2,26 @@
 // O inglês é o da apostila sempre que ela traz um enunciado; o português é só a tradução do
 // enunciado para a criança entender o que fazer — nunca conteúdo novo.
 import type { Ex } from './types';
+import { UNITS } from './index';
 
-export interface Ask { en: string; pt: string }
+export interface Ask { en: string; pt: string; scene?: { en: string; pt?: string } }
+
+/** Exercícios de "situação" da apostila: o enunciado é o da seção; a situação vira um cartão.
+ *  Enunciados copiados da página da apostila (ver a ref de cada lição). */
+const SECTION: Record<string, Ask> = {
+  'u1-homework': { en: 'Write the greeting for each situation!', pt: 'Qual cumprimento combina com cada situação?' },
+  'u6-homework': { en: 'Write 5 animal sounds in English!', pt: 'Qual é o som de cada animal em inglês?' },
+  'u7-homework': { en: 'How many of each body part do we have? Write the number in English words!', pt: 'Quantos de cada parte do corpo nós temos? Escolha o número em inglês.' },
+  'u8-homework': { en: 'Write the classroom command for each situation!', pt: 'Qual é o comando da sala de aula para cada situação?' },
+  'u9-practice': { en: "I LIKE 😋 or I DON'T LIKE 🤢?", pt: 'Eu gosto ou não gosto? Escolha a frase certa.' },
+  'u11-practice': { en: 'What do you say? Choose the right phrase!', pt: 'O que você diz? Escolha a frase certa.' },
+  'u11-homework': { en: 'What do you say? Write the right phrase for each situation!', pt: 'O que você diz? Escolha a frase certa para cada situação.' },
+};
+/** tira o "O que você diz?" do fim da tradução da situação (o enunciado já pergunta) */
+const sceneFrom = (q: string): Ask['scene'] => {
+  const pt = PT[q]?.replace(/\s*(O que (você|ela) diz\?|Qual é o comando\?)\s*$/, '').trim();
+  return { en: q.replace(/\s*:\s*$/, ''), pt: pt && pt !== q ? pt : undefined };
+};
 
 /** Tradução dos enunciados que vêm da apostila. */
 const PT: Record<string, string> = {
@@ -102,7 +120,7 @@ const PIC_BY_UNIT: Record<number, Ask> = {
 };
 
 function choiceAsk(q: string): Ask {
-  if (PT[q]) return { en: q, pt: PT[q] };
+  if (PT[q]) return { en: q.replace(/\s*:\s*$/, '…'), pt: PT[q] };
   let m = q.match(/^(\d+)\s*([+−×])\s*(\d+)\s*=$/);
   if (m) return { en: `${m[1]} ${m[2]} ${m[3]} = ?`, pt: `Quanto é ${m[1]} ${m[2] === '×' ? 'vezes' : m[2] === '+' ? 'mais' : 'menos'} ${m[3]}? Escolha em inglês.` };
   m = q.match(/^(\d+)\s*=$/);
@@ -112,13 +130,22 @@ function choiceAsk(q: string): Ask {
   return { en: q, pt: 'Escolha a resposta certa.' };
 }
 
+/** "Spell your name": o nome já vem trocado na lição, então reconhece pelo item da apostila */
+const NAME_ITEMS = new Set(['u4-practice#11', 'u4-homework#3']);
+export const isNameScramble = (ex: Ex) => ex.t === 'scramble' && (ex.a.includes('{NAME}') || NAME_ITEMS.has(ex.id ?? ''));
+
 export function askFor(ex: Ex, unitId: number): Ask {
   const q = 'q' in ex ? (ex.q as string | undefined) : undefined;
   switch (ex.t) {
     case 'match':
       return q ? { en: q, pt: PT[q] ?? 'Toque numa palavra e depois no par dela.' } : { en: 'Match the pairs!', pt: 'Toque numa palavra em inglês e depois na tradução dela.' };
     case 'pic':
-      return q ? { en: q, pt: PT[q] ?? 'Toque na resposta certa.' } : PIC_BY_UNIT[unitId] ?? { en: 'What is it?', pt: 'O que é isso?' };
+      if (q) return { en: q, pt: PT[q] ?? 'Toque na resposta certa.' };
+      {
+        // revisão mistura units: a pergunta segue a unit de onde vem a palavra (cor, família, animal…)
+        const from = UNITS.find((u) => u.vocab.some((v) => v.en.toLowerCase() === ex.a.toLowerCase()))?.id ?? unitId;
+        return PIC_BY_UNIT[from] ?? PIC_BY_UNIT[unitId] ?? { en: 'What is it?', pt: 'O que é isso?' };
+      }
     case 'build':
       return ex.dir === 'pe'
         ? { en: 'Translate into English.', pt: 'Monte a frase em inglês tocando nas palavras.' }
@@ -127,8 +154,10 @@ export function askFor(ex: Ex, unitId: number): Ask {
       return ex.listen
         ? { en: 'Listen and complete the sentence.', pt: 'Ouça e escolha a palavra que falta.' }
         : { en: 'Complete the sentence.', pt: 'Escolha a palavra que falta na frase.' };
-    case 'choice':
-      return choiceAsk(ex.q);
+    case 'choice': {
+      const sec = ex.id ? SECTION[ex.id.split('#')[0]] : undefined;
+      return sec ? { ...sec, scene: sceneFrom(ex.q) } : choiceAsk(ex.q);
+    }
     case 'hear':
       return { en: 'What do you hear?', pt: 'Ouça e toque no que você ouviu.' };
     case 'speak':
@@ -136,7 +165,7 @@ export function askFor(ex: Ex, unitId: number): Ask {
         ? { en: 'Your turn! Say it out loud.', pt: 'Sua vez! Complete com as suas palavras e fale em voz alta.' }
         : { en: 'Say it out loud!', pt: 'Ouça e repita em voz alta.' };
     case 'scramble':
-      return ex.a.includes('{NAME}') || ex.hint === '✏️'
+      return ex.a.includes('{NAME}') || NAME_ITEMS.has(ex.id ?? '')
         ? { en: 'Spell your name!', pt: 'Toque nas letras para soletrar o seu nome.' }
         : { en: 'Unscramble the letters!', pt: 'Toque nas letras na ordem certa para formar a palavra.' };
     case 'order':
@@ -151,3 +180,10 @@ export function askFor(ex: Ex, unitId: number): Ask {
 }
 
 export const PT_MAP = PT;
+
+/** Frase da apostila que vem com uma instrução na frente ("Escreva sua apresentação: Meu nome é…").
+ *  Separa a instrução (vira legenda) da frase que a criança traduz. */
+export function splitLead(q: string): { lead?: string; text: string } {
+  const m = q.match(/^((?:Escreva|Write)[^:]{0,60}):\s*(.+)$/);
+  return m ? { lead: m[1], text: m[2] } : { text: q };
+}

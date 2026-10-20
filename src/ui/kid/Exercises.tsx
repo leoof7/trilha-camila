@@ -1,5 +1,6 @@
 // Os tipos de exercício. Cada um avisa o Player quando dá para "Verificar" (setCheck)
 // ou termina sozinho (done), como o combinar pares e a fala.
+import { isNameScramble, splitLead } from '../../content/instructions';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Prepared } from '../../engine/session';
 import { norm, sameAnswer, shuffle, speechScore } from '../../engine/check';
@@ -87,7 +88,7 @@ function Build({ ex, locked, setCheck }: ExProps) {
     <>
       <div className="bubble">
         {!toEn && <button className="abtn sm" onClick={() => say(ex.q)} aria-label="Ouvir em inglês">🔊</button>}
-        <div className="say"><small>{toEn ? 'Português → English' : 'English → Português'}</small>{ex.q}</div>
+        <div className="say"><small>{splitLead(ex.q).lead ? `${splitLead(ex.q).lead} · ` : ''}{toEn ? 'Português → English' : 'English → Português'}</small>{splitLead(ex.q).text}</div>
       </div>
       <div className="answerline" aria-label="Sua resposta">
         {picked.map((i, pos) => (
@@ -226,7 +227,7 @@ function Scramble({ ex, locked, setCheck }: ExProps) {
   const bank = ex.bank!;
   const [picked, setPicked] = useState<number[]>([]);
   const target = ex.a.replace(/\s/g, '');
-  const isName = ex.hint === '✏️';
+  const isName = isNameScramble(ex);
   const meaning = isName ? 'o seu nome' : meaningOf(ex.a);
   useEffect(() => {
     setCheck(picked.length === bank.length ? () => ({ ok: picked.map((i) => bank[i]).join('') === target, answer: ex.a }) : null);
@@ -314,7 +315,7 @@ function TypeIn({ ex, locked, setCheck }: ExProps) {
   useEffect(() => { setCheck(norm(v) ? () => ({ ok: sameAnswer(v, ex.a, ex.alt), answer: ex.a }) : null); }, [v]);
   return (
     <>
-      {!/^Crossword/.test(ex.q) && <div className="say" style={{ fontSize: 30, textAlign: 'center', fontFamily: 'var(--f-display)', fontWeight: 800 }}>{ex.q.replace(/\s*=\s*\?$/, '')}</div>}
+      {!/^Crossword/.test(ex.q) && <div className="say" style={{ fontSize: /^\P{L}+$/u.test(ex.q.replace(/\s*=\s*\?$/, '')) && !/\d/.test(ex.q) ? 72 : 30, textAlign: 'center', fontFamily: 'var(--f-display)', fontWeight: 800 }}>{ex.q.replace(/\s*=\s*\?$/, '')}</div>}
       <input className="typein" autoFocus autoCapitalize="none" autoComplete="off" spellCheck={false} disabled={locked} value={v} onChange={(e) => setV(e.target.value)} placeholder="Escreva em inglês" aria-label="Sua resposta" />
     </>
   );

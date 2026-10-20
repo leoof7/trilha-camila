@@ -14,7 +14,7 @@ import { askFor } from '../../content/instructions';
 import { helpFor } from '../../content/help';
 import { Mascot } from '../Mascot';
 import { LessonPage } from './LessonPage';
-import { openApostila, setBookOwner } from '../Apostila';
+import { openApostila, setBookOwner, pageSrc } from '../Apostila';
 
 const PRAISE = ['Muito bom!', 'Parabéns!', 'Ótimo!', 'Mandou bem!', 'Arrasou!', 'Isso aí!', 'Incrível!', 'Perfeito!', 'Great job!', 'Excellent!', 'Well done!', 'Super!'];
 const AUTO_NEXT = 3;
@@ -175,6 +175,7 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
         {!askResume && phase === 'play' && ex && ask && (
           <>
             <div className="stage pad">
+              <div className="qhead">
               <div className="col" style={{ gap: 6 }}>
                 <div className="row" style={{ justifyContent: 'space-between' }}>
                   <span className="kind">{mode === 'quiz' ? (exam ? exam.title : `Provinha · Unit ${unitId}`) : TYPE_LABEL[ex.t]}</span>
@@ -201,7 +202,22 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
                   {hp.tip && <p className="small">💡 {hp.tip}</p>}
                 </div>
               )}
-              <Exercise key={`${ex.id}-${idx}-${attempt}`} ex={ex} locked={!!verdict} setCheck={(fn) => setCheckFn(() => fn)} done={judge} withTeacher={withTeacher} />
+              {ex.ref && (
+                <button className="qpage" onClick={() => openApostila(ex.ref!.pdf)} aria-label="Abrir a página da apostila">
+                  <img src={pageSrc(ex.ref.pdf)} alt="" loading="lazy" />
+                  <span>📖 Página da apostila{ex.ref.printed ? ` ${ex.ref.printed}` : ''}</span>
+                </button>
+              )}
+              </div>
+              <div className="qbody">
+                {ask.scene && (
+                  <div className="scene" lang="en">
+                    <b>{ask.scene.en}</b>
+                    {ask.scene.pt && <span lang="pt-BR">{ask.scene.pt}</span>}
+                  </div>
+                )}
+                <Exercise key={`${ex.id}-${idx}-${attempt}`} ex={ex} locked={!!verdict} setCheck={(fn) => setCheckFn(() => fn)} done={judge} withTeacher={withTeacher} />
+              </div>
             </div>
             <div className={`pfoot pad${verdict ? (verdict.ok ? ' good' : ' bad') : ''}`}>
               <Mascot size={72} mood={verdict ? (verdict.ok ? 'happy' : 'sad') : ex.t === 'hear' || (ex.t === 'fill' && ex.listen) ? 'listen' : 'idle'} nonce={nonce} />

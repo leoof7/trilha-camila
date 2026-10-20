@@ -144,3 +144,13 @@ link, várias turmas, Apostila 2.
 - **Sincronização ao vivo sem perder nada:** antes de gravar, o app junta o que está na nuvem com o que está no aparelho (tudo que tem id é somado; o que foi apagado de propósito vira "lápide" e não volta). Se dois aparelhos gravarem ao mesmo tempo, o segundo junta de novo e grava. Testes: `tests/merge.test.ts`.
 - **Login do aluno no celular dele:** "Sou aluno(a)" → **código da turma** (6 letras, aparece para a professora em Alunos e Configurações) + nome + senha (padrão: o nome). Aluno não tem e-mail nem conta. O banco devolve **só os dados dele** (sem colegas, sem telefone dos pais, sem senha da professora) e só aceita gravar o que é dele (lições, figurinhas, dias de estudo, lição pela metade). Quem faltou recebe a aula sem descrição. Testes num Postgres de verdade: `tests/banco.test.ts` (supabase/002_alunos.sql).
 - **Card para os pais** também no Diário de aulas, para qualquer aula já finalizada.
+
+## 17. Revisão módulo a módulo (20/10/2026)
+O robô `tests/e2e/revisar.mjs` abre todas as lições das 11 units (no PC e no celular), fotografa cada exercício e procura texto vazando ou fora da tela. Correções:
+- **Exercícios de situação** (Unit 1, 6, 7, 8, 9, 11): o título agora é o enunciado da apostila (ex.: "How many of each body part do we have?") e a situação aparece num cartão no centro ("fingers on both hands" + "Quantos dedos nas duas mãos?"). Nenhum título termina com ":".
+- **Tela de exercício no PC:** pergunta à esquerda (com a miniatura da página da apostila) e resposta à direita, em área grande e centralizada. No celular continua uma coluna.
+- **Página da lição:** o salsicha fica ao lado do botão "Começar", nunca em cima do texto.
+- **"Desembaralhe":** PENCIL mostrava "o seu nome" e CAT/ZEBRA mostravam a letra; agora mostra o significado (lápis, gato, zebra). "Spell your name" só nos itens do nome.
+- **Revisão:** figura de cor pergunta "What color is it?" (antes "Who is it?").
+- **Figuras:** as opções sorteadas são só palavras, nunca frases ("I'm hungry!").
+- **Monte a frase:** sem número solto como peça falsa; frase com instrução na frente mostra a instrução como legenda.

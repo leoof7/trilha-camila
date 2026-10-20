@@ -46,7 +46,9 @@ export function helpFor(ex: Ex, unitId: number): Help {
 /** Significado da palavra desembaralhada, tirado do vocabulário da apostila. */
 export function meaningOf(word: string): string | undefined {
   const w = norm(word);
-  for (const u of UNITS) for (const v of u.vocab) {
+  // a Unit 4 (alfabeto) traduz a palavra pela letra ("Cat" → "C"); ela fica por último
+  for (const u of [...UNITS.filter((x) => x.id !== 4), ...UNITS.filter((x) => x.id === 4)]) for (const v of u.vocab) {
+    if (u.id === 4 && v.pt.trim().length <= 2) continue;
     if (norm(v.en) === w || norm(v.en).replace(/[^a-z ]/g, '').trim() === w) return u.id === 2 ? `o número ${v.pt}` : v.pt;
   }
   const extra: Record<string, string> = { hello: 'Olá!', bye: 'Tchau!', good: 'Bom / Boa (good morning)', thanks: 'Obrigado(a)!', notebook: 'caderno', tuesday: 'terça-feira', father: 'pai' };

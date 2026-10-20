@@ -16,7 +16,8 @@ function unitPools(unit: Unit) {
   for (const v of unit.vocab) {
     tiles(v.en).forEach((w) => en.push(w));
     tiles(v.pt).forEach((w) => pt.push(w));
-    if (v.emoji) pics.push({ emoji: v.emoji, en: v.en });
+    // figura só sorteia palavras (não frases como "I'm hungry!")
+    if (v.emoji && !/[!?.…]/.test(v.en) && v.en.split(/\s+/).length <= 2) pics.push({ emoji: v.emoji, en: v.en });
   }
   for (const l of unit.lessons)
     for (const it of l.items) {
@@ -25,7 +26,9 @@ function unitPools(unit: Unit) {
         (it.dir === 'pe' ? pt : en).push(...tiles(it.q));
       }
     }
-  return { en: en.filter((w) => !w.includes('{')), pt: pt.filter((w) => !w.includes('{')), pics };
+  // números soltos ("13") não viram peça falsa: confundem e não são palavra
+  const ok = (w: string) => !w.includes('{') && !/^\d+[.,!?]?$/.test(w);
+  return { en: en.filter(ok), pt: pt.filter(ok), pics };
 }
 
 export function prepareItem(it: Ex, unitId: number, who: Who, keys: KeyMap = {}, rnd: () => number = Math.random): Prepared {
