@@ -517,3 +517,13 @@ table.t td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-al
 .unitdone b { font-family: var(--f-display); font-size: 28px; }
 .unitdone .trophy { font-size: 56px; animation: hop 1s ease-out 2; }
 @media (prefers-reduced-motion: reduce) { .starburst, .starrain { display: none; } }
+
+.today { flex-direction: row; align-items: center; gap: 18px; border-width: 2px; }
+.today h2 { font-size: 24px; font-weight: 800; }
+@media (max-width: 600px) { .today { flex-direction: column; align-items: flex-start; } }
+.classbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #E9FBF3; border: 1.5px solid #9BE3C5; color: var(--ok); border-radius: 18px; padding: 8px 12px; font-size: 14px; }
+.classbar .dot { width: 10px; height: 10px; border-radius: 50%; background: #19B98E; animation: pulse 1.4s infinite; }
+.classbar.compact { margin: 10px max(16px, env(safe-area-inset-left, 0px)) 0; }
+
+.hwrow { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 14px; }
+.tside { overflow-y: auto; }

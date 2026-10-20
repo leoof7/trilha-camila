@@ -10,41 +10,62 @@ import { LeseteSignature } from './Brand';
 
 export function Profiles() {
   const { db, go } = useApp();
-  const [askPin, setAskPin] = useState(false);
+  const [role, setRole] = useState<'?' | 'prof' | 'aluno'>('?');
+  const [askPin, setAskPin] = useState<null | { pin: string; title: string; then: () => void }>(null);
   const students = db.students.filter((s) => !s.archived);
-  const openTeacher = () => (db.settings.pin ? setAskPin(true) : go({ name: 'teacher' }));
 
-  if (askPin) return <PinScreen onOk={() => go({ name: 'teacher' })} onCancel={() => setAskPin(false)} />;
+  const openTeacher = () => (db.settings.pin ? setAskPin({ pin: db.settings.pin, title: `Olá, ${db.settings.teacherName}!`, then: () => go({ name: 'teacher' }) }) : go({ name: 'teacher' }));
+  const openStudent = (s: Student) => (s.pin ? setAskPin({ pin: s.pin, title: `Oi, ${s.name}!`, then: () => go({ name: 'kid', studentId: s.id }) }) : go({ name: 'kid', studentId: s.id }));
+
+  if (askPin) return <PinScreen pin={askPin.pin} title={askPin.title} onOk={askPin.then} onCancel={() => setAskPin(null)} />;
 
   return (
     <main className="profiles">
       <span className="eyebrow">📖 {APOSTILA.subtitle}</span>
-      <h1>Quem vai estudar <b>hoje?</b></h1>
-      <div className="pgrid">
-        {students.map((s) => (
-          <button key={s.id} className="pcard" onClick={() => go({ name: 'kid', studentId: s.id })}>
-            <span className="face" style={{ background: s.gender === 'm' ? '#1F5AE2' : '#E8458B' }}>
-              {s.photo ? <img src={s.photo} alt="" /> : s.name[0]}
-            </span>
-            <b>{s.name}</b>
-            <span>{s.gender === 'm' ? 'Aluno' : 'Aluna'} · Unit {s.currentUnit}</span>
-          </button>
-        ))}
-        <button className="pcard prof" onClick={openTeacher}>
-          <span className="face">🍎</span>
-          <b>{db.settings.teacherName}</b>
-          <span>Professora{db.settings.pin ? ' · 🔒' : ''}</span>
-        </button>
-      </div>
-      {students.length === 0 && <p className="mute">Entre como professora para cadastrar a primeira aluna.</p>}
-      <Mascot size={110} say="Let's go!" />
+      {role === '?' && (
+        <>
+          <h1>Quem está <b>entrando?</b></h1>
+          <div className="pgrid">
+            <button className="pcard prof" onClick={openTeacher}>
+              <span className="face">🍎</span>
+              <b>Sou a professora</b>
+              <span>{db.settings.teacherName}{db.settings.pin ? ' · 🔒' : ''}</span>
+            </button>
+            <button className="pcard" onClick={() => setRole('aluno')}>
+              <span className="face" style={{ background: 'linear-gradient(135deg,#E8458B,#1F5AE2)' }}>🎒</span>
+              <b>Sou aluno(a)</b>
+              <span>{students.length} {students.length === 1 ? 'aluno' : 'alunos'}</span>
+            </button>
+          </div>
+          <Mascot size={110} say="Let's go!" />
+        </>
+      )}
+      {role === 'aluno' && (
+        <>
+          <h1>Quem vai estudar <b>hoje?</b></h1>
+          <div className="pgrid">
+            {students.map((s) => (
+              <button key={s.id} className="pcard" onClick={() => openStudent(s)}>
+                <span className="face" style={{ background: s.gender === 'm' ? '#1F5AE2' : '#E8458B' }}>
+                  {s.photo ? <img src={s.photo} alt="" /> : s.name[0]}
+                </span>
+                <b>{s.name}</b>
+                <span>{s.pin ? '🔒 com senha' : `Unit ${s.currentUnit}`}</span>
+              </button>
+            ))}
+          </div>
+          {students.length === 0 && <p className="mute">A professora ainda não cadastrou alunos.</p>}
+          <button className="link" onClick={() => setRole('?')}>‹ Voltar</button>
+        </>
+      )}
       <LeseteSignature />
     </main>
   );
 }
 
-export function PinScreen({ onOk, onCancel, title }: { onOk: () => void; onCancel: () => void; title?: string }) {
+export function PinScreen({ onOk, onCancel, title, pin }: { onOk: () => void; onCancel: () => void; title?: string; pin?: string }) {
   const { db } = useApp();
+  const target = pin ?? db.settings.pin;
   const [v, setV] = useState('');
   const [bad, setBad] = useState(false);
   const press = (d: string) => {
@@ -52,7 +73,7 @@ export function PinScreen({ onOk, onCancel, title }: { onOk: () => void; onCance
     const nv = v + d;
     setV(nv);
     if (nv.length === 4) {
-      if (nv === db.settings.pin) onOk();
+      if (nv === target) onOk();
       else {
         setBad(true);
         setTimeout(() => { setBad(false); setV(''); }, 450);
@@ -63,7 +84,7 @@ export function PinScreen({ onOk, onCancel, title }: { onOk: () => void; onCance
     <main className="profiles">
       <div className="pin">
         <h1 style={{ fontSize: 32 }}>{title ?? `Olá, ${db.settings.teacherName}!`}</h1>
-        <p className="mute">Digite sua senha de 4 números</p>
+        <p className="mute">Digite a senha de 4 números</p>
         <div className={`pin-dots${bad ? ' shake' : ''}`} aria-live="polite">
           {[0, 1, 2, 3].map((i) => <i key={i} className={i < v.length ? 'on' : ''} />)}
         </div>

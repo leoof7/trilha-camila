@@ -8,15 +8,20 @@ import { useState } from 'react';
 import { ClassForm } from './Classes';
 import { uid } from '../../store/db';
 import type { ClassRecord, Presence } from '../../store/types';
+import { StartClass, useActiveClass, FinishClass } from './ClassFlow';
+import { Mascot } from '../Mascot';
 
 export function Dashboard({ open }: { open: (tab: string, sid?: string) => void }) {
-  const { db, go } = useApp();
+  const { db, go, update } = useApp();
+  const active = useActiveClass();
+  const [starting, setStarting] = useState(false);
+  const [finishing, setFinishing] = useState(false);
   const students = db.students.filter((s) => !s.archived);
   const today = dayKey();
-  const todayClass = db.classes.find((c) => c.date === today);
+  const todayClass = db.classes.find((c) => c.date === today && c.status !== 'aberta');
+  const noClass = (db.settings.noClassDays ?? []).includes(today);
   const recent = [...db.results].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 8);
   const [form, setForm] = useState<ClassRecord | null>(null);
-  const newClass = (): ClassRecord => todayClass ?? { id: uid(), date: today, start: '', modality: 'presencial', attendance: Object.fromEntries(students.map((s) => [s.id, 'P' as Presence])), lessons: [], notes: '', nextGoal: '' };
   const greeting = new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite';
 
   return (
@@ -26,8 +31,49 @@ export function Dashboard({ open }: { open: (tab: string, sid?: string) => void 
           <div className="eyebrow">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
           <h1>{greeting}, {db.settings.teacherName}!</h1>
         </div>
-        <button className="btn yellow" onClick={() => setForm(newClass())}>{todayClass ? 'Ver aula de hoje' : '+ Registrar aula de hoje'}</button>
       </div>
+
+      <section className="card today" style={{ borderColor: active ? '#19B98E' : 'var(--line)' }}>
+        <Mascot size={90} mood={active ? 'happy' : 'listen'} />
+        <div className="grow col" style={{ gap: 8 }}>
+          {active ? (
+            <>
+              <h2>🟢 Aula em andamento desde {active.start}</h2>
+              <p className="mute">{Object.values(active.attendance).filter((p) => p === 'P').length} presente(s) · {active.modality === 'online' ? 'online' : 'presencial'}. Abra a trilha do aluno: tudo fica liberado e o que ele fizer entra no registro da aula.</p>
+              <div className="row wrap">
+                {students.filter((s) => active.attendance[s.id] === 'P').map((s) => (
+                  <button key={s.id} className="btn blue sm" onClick={() => go({ name: 'kid', studentId: s.id, withTeacher: true })}>▶ Trilha de {s.name}</button>
+                ))}
+                <button className="btn red sm" onClick={() => setFinishing(true)}>■ Finalizar aula</button>
+              </div>
+            </>
+          ) : todayClass ? (
+            <>
+              <h2>✓ Aula de hoje registrada</h2>
+              <p className="mute">{todayClass.start}{todayClass.end ? `–${todayClass.end}` : ''} · {todayClass.lessons.map((l) => findLesson(l)?.lesson.title).filter(Boolean).join(', ') || 'sem lições marcadas'}</p>
+              {todayClass.notes && <p className="small">“{todayClass.notes}”</p>}
+              <div className="row wrap"><button className="btn ghost sm" onClick={() => setForm(todayClass)}>Ver ou editar</button><button className="btn blue sm" onClick={() => setStarting(true)}>▶ Iniciar outra aula</button></div>
+            </>
+          ) : noClass ? (
+            <>
+              <h2>Hoje não tem aula</h2>
+              <p className="mute">Os alunos podem praticar sozinhos no app.</p>
+              <div className="row"><button className="btn blue sm" onClick={() => setStarting(true)}>▶ Tem aula sim, iniciar</button></div>
+            </>
+          ) : (
+            <>
+              <h2>Tem aula hoje?</h2>
+              <p className="mute">Ao iniciar, o dia, o horário e a presença ficam salvos no calendário.</p>
+              <div className="row wrap">
+                <button className="btn blue" onClick={() => setStarting(true)}>▶ Iniciar aula</button>
+                <button className="btn ghost" onClick={() => update((d) => ({ ...d, settings: { ...d.settings, noClassDays: [...(d.settings.noClassDays ?? []), today] } }))}>Hoje não tem aula</button>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+      {starting && <StartClass onClose={() => setStarting(false)} />}
+      {finishing && active && <FinishClass c={active} onClose={() => setFinishing(false)} />}
 
       <div className="grid2">
         {students.map((s) => {
@@ -60,7 +106,7 @@ export function Dashboard({ open }: { open: (tab: string, sid?: string) => void 
               {goal && <p className="small">🎯 <b>Próximo objetivo:</b> {goal.text}</p>}
               {prog.done === prog.total && quiz && s.currentUnit < 11 && <p className="small" style={{ color: 'var(--ok)', fontWeight: 800 }}>✓ Terminou a Unit {s.currentUnit}. Pronta para a Unit {s.currentUnit + 1}!</p>}
               <div className="row wrap">
-                <button className="btn navy sm" style={{ boxShadow: '0 3px 0 #171A45' }} onClick={() => go({ name: 'kid', studentId: s.id, withTeacher: true })}>▶ Abrir aula com {s.name}</button>
+                <button className="btn navy sm" style={{ boxShadow: '0 3px 0 #000' }} onClick={() => go({ name: 'kid', studentId: s.id, withTeacher: true })}>▶ Trilha de {s.name} (modo aula)</button>
                 <button className="btn ghost sm" onClick={() => open('student', s.id)}>Ficha de {s.name}</button>
               </div>
             </section>

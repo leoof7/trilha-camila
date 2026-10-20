@@ -13,6 +13,7 @@ export interface Student {
   guardian?: string;        // (antigo) nome do responsável
   guardians?: Guardian[];   // mãe, pai ou outro responsável
   currentUnit: number;      // a Camila libera as units até esta
+  pin?: string;             // senha de 4 números do aluno (opcional), criada pela professora
   createdAt: string;
   archived?: boolean;
 }
@@ -60,8 +61,21 @@ export interface ClassRecord {
   modality: Modality;
   attendance: Record<string, Presence>;
   lessons: string[];        // ids das lições trabalhadas (geram as páginas)
-  notes: string;
+  notes: string;            // descrição da aula
   nextGoal: string;
+  status?: 'aberta' | 'finalizada';
+  startedAt?: string;       // ISO, quando a professora tocou em Iniciar aula
+  end?: string;             // "17:05"
+}
+
+export interface HomeworkMark {   // Trabalhos: homework de cada unit
+  studentId: string;
+  unitId: number;
+  delivered: boolean;       // entregou a folha da apostila
+  signed: boolean;          // assinatura dos pais
+  stars: number;            // 0–5, como o Teacher's feedback
+  note?: string;
+  date: string;
 }
 
 export interface Goal {
@@ -102,6 +116,8 @@ export interface Settings {
   schoolYear: number;
   setupDone: boolean;
   pinOptional?: boolean;   // v2: senha passou a ser opcional
+  activeClassId?: string;  // aula em andamento
+  noClassDays?: string[];  // dias marcados como "hoje não tem aula"
 }
 
 export interface DB {
@@ -117,6 +133,7 @@ export interface DB {
   keys: Record<string, KeyReview>;
   studyDays: Record<string, string[]>; // studentId -> dias com estudo
   drafts?: Record<string, Draft>;      // lição começada e não terminada
+  homework?: HomeworkMark[];
 }
 
 export interface Draft {

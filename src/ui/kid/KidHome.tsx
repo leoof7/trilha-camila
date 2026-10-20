@@ -6,6 +6,7 @@ import { Mascot } from '../Mascot';
 import { useState } from 'react';
 import { Modal } from '../common';
 import { ApostilaShelf } from '../Apostila';
+import { ClassBar } from '../teacher/ClassFlow';
 import { bestQuiz, bestStars, lessonDone, nextLesson, unitOpen, unitProgress } from './progress';
 import { letter, LETTER_TEXT, average } from '../../engine/grade';
 
@@ -28,7 +29,7 @@ export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: 
               <div className="hello">Hi, {s.name}!</div>
               <div className="lv">{lv.emoji} {lv.name}{lv.next ? ` · faltam ${lv.next.xp - xp} XP para ${lv.next.name}` : ''}</div>
             </div>
-            <button className="btn sm ghost" style={{ background: 'rgba(255,255,255,.2)', color: '#fff', border: 0, boxShadow: 'none' }} onClick={() => go({ name: 'profiles' })} aria-label="Trocar de perfil">Sair</button>
+            <button className="btn sm ghost" style={{ background: 'rgba(255,255,255,.2)', color: '#fff', border: 0, boxShadow: 'none' }} onClick={() => go(withTeacher ? { name: 'teacher' } : { name: 'profiles' })} aria-label={withTeacher ? 'Voltar para a área da professora' : 'Sair'}>{withTeacher ? '‹ Professora' : 'Sair'}</button>
           </div>
           <div className="xpbar" aria-hidden="true"><i style={{ width: `${lv.pct * 100}%` }} /></div>
           <div className="chips">
@@ -37,11 +38,12 @@ export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: 
             <span className="chip" title="Figurinhas">🏅 {db.stickers.filter((x) => x.studentId === s.id).length}</span>
           </div>
         </header>
+        {withTeacher && <ClassBar compact />}
         <nav className="ktabs" aria-label="Seções">
           <button aria-current={tab === 'trail'} onClick={() => setTab('trail')}><span>🗺️</span>Trilha</button>
           <button aria-current={tab === 'book'} onClick={() => setTab('book')}><span>📖</span>Apostila</button>
           <button aria-current={tab === 'album'} onClick={() => setTab('album')}><span>🏅</span>Figurinhas</button>
-          <button aria-current={tab === 'me'} onClick={() => setTab('me')}><span>📒</span>Minhas notas</button>
+          <button aria-current={tab === 'me'} onClick={() => setTab('me')}><span>📒</span>Meu boletim</button>
         </nav>
 
         {tab === 'trail' && <Trail studentId={s.id} withTeacher={withTeacher} todayN={db.results.filter((r) => r.studentId === s.id && r.date === dayKey()).length} />}
@@ -186,7 +188,8 @@ function Me({ studentId }: { studentId: string }) {
   const fb = db.feedback.filter((f) => f.studentId === studentId);
   return (
     <main className="me pad">
-      <h2 style={{ fontSize: 26 }}>Minhas notas</h2>
+      <h2 style={{ fontSize: 26 }}>Meu boletim</h2>
+      <MyClasses studentId={studentId} />
       {avg !== null ? (
         <div className="gradecard" style={{ borderColor: 'var(--t)' }}>
           <LetterBadge points={avg} scale={db.settings.scale} />
@@ -242,5 +245,31 @@ function QuizGate({ unitId, onOk, onClose }: { unitId: number; onOk: () => void;
       )}
       <button className="btn ghost" onClick={onClose}>Voltar</button>
     </Modal>
+  );
+}
+
+/** Minhas aulas: o que a Camila registrou de cada aula, presença e próximo objetivo. */
+function MyClasses({ studentId }: { studentId: string }) {
+  const { db } = useApp();
+  const cls = db.classes.filter((c) => c.attendance[studentId] && c.status !== 'aberta').sort((a, b) => b.date.localeCompare(a.date));
+  const P = cls.filter((c) => c.attendance[studentId] === 'P').length;
+  return (
+    <div className="col" style={{ gap: 8 }}>
+      <div className="row" style={{ gap: 8 }}>
+        <div className="gradecard grow"><b style={{ fontSize: 22 }}>{cls.length}</b><span className="small mute">aulas</span></div>
+        <div className="gradecard grow"><b style={{ fontSize: 22 }}>{cls.length - P}</b><span className="small mute">faltas</span></div>
+      </div>
+      {cls.length > 0 && <h3>📅 Minhas aulas</h3>}
+      {cls.slice(0, 8).map((c) => (
+        <div key={c.id} className="gradecard" style={{ alignItems: 'flex-start' }}>
+          <span className={`pill ${c.attendance[studentId] === 'P' ? 'p-ok' : c.attendance[studentId] === 'J' ? 'p-away' : 'p-help'}`}>{c.attendance[studentId] === 'P' ? 'Presente' : c.attendance[studentId] === 'J' ? 'Justificada' : 'Falta'}</span>
+          <div className="grow">
+            <b>{fmtDate(c.date)}{c.start ? ` · ${c.start}` : ''}</b>
+            {c.notes && <p className="small">{c.notes}</p>}
+            {c.nextGoal && <p className="small">🎯 {c.nextGoal}</p>}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

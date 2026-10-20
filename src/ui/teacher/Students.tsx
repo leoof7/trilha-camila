@@ -301,6 +301,7 @@ function Data({ s, onArchive }: { s: Student; onArchive: () => void }) {
   return (
     <section className="card" style={{ maxWidth: 560 }}>
       <StudentFields value={v} onChange={setV} />
+      <div className="field" style={{ maxWidth: 260 }}><label htmlFor="spin">Senha do aluno (4 números, opcional)</label><input id="spin" className="input" inputMode="numeric" maxLength={4} value={v.pin ?? ''} onChange={(e) => setV({ ...v, pin: e.target.value.replace(/\D/g, '').slice(0, 4) || undefined })} placeholder="sem senha" /></div>
       <h3>Família</h3>
       <GuardiansFields value={fam} onChange={setFam} />
       <button className="btn navy" style={{ boxShadow: '0 5px 0 #171A45' }} onClick={() => { update((d) => ({ ...d, students: d.students.map((x) => (x.id === s.id ? { ...x, ...v, guardians: fam.filter((g) => g.name.trim()), name: (v.name || x.name).trim() } as Student : x)) })); toast('Dados salvos.'); }}>Salvar</button>
