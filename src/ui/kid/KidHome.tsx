@@ -3,6 +3,8 @@ import { UNITS, REVIEWS, FUN_ZONE, KIND_ICON, KIND_LABEL, type Lesson } from '..
 import { levelOf, streak, STICKERS, DAILY_GOAL, dayKey } from '../../engine/game';
 import { Avatar, LetterBadge, fmtDate } from '../common';
 import { Mascot } from '../Mascot';
+import { useState } from 'react';
+import { Modal } from '../common';
 import { ApostilaShelf } from '../Apostila';
 import { bestQuiz, bestStars, lessonDone, nextLesson, unitOpen, unitProgress } from './progress';
 import { letter, LETTER_TEXT, average } from '../../engine/grade';
@@ -81,8 +83,10 @@ function Trail({ studentId, withTeacher, todayN }: { studentId: string; withTeac
     );
   };
 
+  const [quizAsk, setQuizAsk] = useState<number | null>(null);
   return (
     <main className="pad">
+      {quizAsk !== null && <QuizGate unitId={quizAsk} onClose={() => setQuizAsk(null)} onOk={() => { const u = quizAsk; setQuizAsk(null); play(u, `quiz-u${u}`, 'quiz'); }} />}
       {withTeacher && <div className="withteacher">👩‍🏫 Aula com a Camila: os exercícios de fala são avaliados por ela.</div>}
       <div className="mission">
         <Mascot size={78} mood={todayN >= DAILY_GOAL ? 'cheer' : 'idle'} />
@@ -99,7 +103,7 @@ function Trail({ studentId, withTeacher, todayN }: { studentId: string; withTeac
           const open = !!withTeacher || unitOpen(db, studentId, u.id); // professora: tudo liberado
           const prog = unitProgress(db, studentId, u.id);
           const quiz = bestQuiz(db, studentId, u.id);
-          const quizOpen = open && (prog.done >= 3 || !!withTeacher);
+          const quizOpen = open; // provinha: sempre com a professora (modo aula ou senha)
           const rv = REVIEWS.find((r) => r.afterUnit === u.id);
           return (
             <section key={u.id} className="col" style={{ gap: 18 }}>
@@ -113,12 +117,12 @@ function Trail({ studentId, withTeacher, todayN }: { studentId: string; withTeac
               {open && (
                 <div className="nodes">
                   {u.lessons.map((l, i) => nodeFor(u.id, l, i, true, u.color))}
-                  <button className={`quiznode${quizOpen ? '' : ' lock'}`} style={{ borderColor: u.color }} disabled={!quizOpen} onClick={() => play(u.id, `quiz-u${u.id}`, 'quiz')}>
+                  <button className={`quiznode${quizOpen ? '' : ' lock'}`} style={{ borderColor: u.color }} disabled={!quizOpen} onClick={() => (withTeacher ? play(u.id, `quiz-u${u.id}`, 'quiz') : setQuizAsk(u.id))}>
                     <span className="big">{quiz ? '🏆' : '📝'}</span>
                     <span className="grow">
                       <b>Provinha da Unit {u.id}</b>
                       <span className="small mute" style={{ display: 'block' }}>
-                        {quiz ? `Melhor nota: ${quiz.points} pontos` : quizOpen ? '10 questões · vale nota!' : 'Faça 3 lições para liberar'}
+                        {quiz ? `Melhor nota: ${quiz.points} pontos` : withTeacher ? '10 questões · vale nota!' : '🔒 Só com a professora'}
                       </span>
                     </span>
                     {quiz && <LetterBadge points={quiz.points} scale={db.settings.scale} sm />}
@@ -213,5 +217,30 @@ function Me({ studentId }: { studentId: string }) {
         ))}
       </div>
     </main>
+  );
+}
+
+/** Provinha só com a professora: pede a senha dela. */
+function QuizGate({ unitId, onOk, onClose }: { unitId: number; onOk: () => void; onClose: () => void }) {
+  const { db } = useApp();
+  const [v, setV] = useState('');
+  const [bad, setBad] = useState(false);
+  const pin = db.settings.pin;
+  return (
+    <Modal label="Liberar provinha" onClose={onClose}>
+      <Mascot size={110} mood="listen" say="Teacher time!" />
+      <h2>Provinha da Unit {unitId}</h2>
+      {pin ? (
+        <>
+          <p>A provinha é feita com a {db.settings.teacherName}. Professora, digite sua senha para liberar.</p>
+          <input className="input" type="password" inputMode="numeric" maxLength={4} autoFocus value={v} aria-label="Senha da professora"
+            onChange={(e) => { const x = e.target.value.replace(/\D/g, ''); setV(x); setBad(false); if (x.length === 4) { if (x === pin) onOk(); else { setBad(true); setV(''); } } }} />
+          {bad && <p className="err">Senha errada.</p>}
+        </>
+      ) : (
+        <p>A provinha é feita com a {db.settings.teacherName}. Para liberar aqui, ela precisa criar uma senha em <b>Configurações</b>. Na aula, use <b>“Abrir aula com {db.students[0]?.name ?? 'a aluna'}”</b>, que já libera a provinha.</p>
+      )}
+      <button className="btn ghost" onClick={onClose}>Voltar</button>
+    </Modal>
   );
 }

@@ -20,7 +20,8 @@ await p.fill('#gn0','Giovane'); await p.fill('#gp0','(31) 9 0000-0000');
 await p.screenshot({path:path.join(here,'prints','00-setup3.png')}).catch(()=>{});
 await p.click('text=Começar a trilha'); await p.waitForTimeout(300);
 await p.screenshot({path:path.join(here,'prints','01-perfis.png')});
-await p.click('text=Anne'); await p.waitForTimeout(200);
+// provinha é sempre com a professora: entra pelo modo aula
+await p.click('.pcard.prof'); await p.waitForTimeout(200); await p.click('text=▶ Abrir aula com Anne'); await p.waitForTimeout(200);
 
 // joga TODAS as lições de todas as units liberando pela provinha
 const { UNITS_IDS } = { UNITS_IDS: [1,2,3,4,5,6,7,8,9,10,11] };

@@ -1,6 +1,9 @@
 // A "página da apostila" que abre antes dos exercícios: cada tipo de lição tem um desenho próprio.
 import { useEffect, useRef, useState } from 'react';
-import type { Lesson, Unit, StoryLine } from '../../content/types';
+import type { Lesson, Unit, StoryLine, Ex } from '../../content/types';
+import { itemsWithIds } from '../../content';
+import { askFor } from '../../content/instructions';
+import { personalizeDeep, type Who } from '../../engine/personalize';
 import { KIND_LABEL } from '../../content';
 import { RefTag } from '../common';
 import { say, sayLines, stopVoice, type Speaker } from '../../lib/speech';
@@ -49,7 +52,49 @@ export function Comic({ title, lines, color }: { title: string; lines: StoryLine
   );
 }
 
-export function LessonPage({ lesson, unit, onStart, extraColor }: { lesson: Lesson; unit: Unit; onStart: () => void; extraColor?: string }) {
+/** "Como fazer": a professora resolve 2 ou 3 exercícios da própria lição antes da criança tentar. */
+function Examples({ lesson, unit, who }: { lesson: Lesson; unit: Unit; who: Who }) {
+  const items = itemsWithIds(lesson).map((it) => personalizeDeep(it, who));
+  const picked: Ex[] = [];
+  const seen = new Set<string>();
+  for (const it of items) { if (it.t === 'speak' || seen.has(it.t)) continue; seen.add(it.t); picked.push(it); if (picked.length === 3) break; }
+  if (!picked.length) return null;
+  const row = (it: Ex, i: number) => {
+    const ask = askFor(it, unit.id);
+    let body: React.ReactNode = null, audio = '';
+    switch (it.t) {
+      case 'match': body = it.pairs.slice(0, 2).map((p) => <div key={p[0]} className="exline"><b lang="en">{p[0]}</b> ➜ {p[1]}</div>); audio = it.pairs[0][0]; break;
+      case 'build': body = <div className="exline">{it.q} ➜ <b>{it.a}</b></div>; audio = it.dir === 'pe' ? it.a : it.q; break;
+      case 'fill': { const [a, b] = it.q.split('___'); body = <div className="exline" lang="en">{a}<mark>{it.a}</mark>{b}</div>; audio = it.q.replace('___', it.a); break; }
+      case 'choice': body = <div className="exline">{it.q} ➜ <b>{it.a}</b></div>; audio = /[a-z]{3}/i.test(it.a) ? it.a : ''; break;
+      case 'pic': body = <div className="exline"><span style={{ fontSize: 26 }}>{it.emoji}</span> ➜ <b lang="en">{it.a}</b></div>; audio = it.a; break;
+      case 'hear': body = <div className="exline">🔊 ouvi <b>{it.say ?? it.a}</b> ➜ toco em <b>{it.a}</b></div>; audio = it.say ?? it.a; break;
+      case 'scramble': body = <div className="exline">{it.a.split('').sort().join(' ')} ➜ <b>{it.a}</b></div>; audio = it.a.toLowerCase(); break;
+      case 'order': body = <div className="exline">{it.a.slice(0, 3).join(' → ')} …</div>; audio = it.a.slice(0, 3).join(', '); break;
+      case 'sort': body = <div className="exline">{it.groups.map((g) => `${g[0]}: ${g[1].slice(0, 2).join(', ')}`).join('  ·  ')}</div>; break;
+      case 'type': body = <div className="exline">{it.q.replace(/\s*=\s*\?$/, '')} ➜ <b>{it.a}</b></div>; audio = it.a; break;
+    }
+    return (
+      <div key={i} className="excard">
+        <span className="exn">{i + 1}</span>
+        <div className="grow">
+          <p className="exq"><span lang="en">{ask.en}</span> <span className="mute">· {ask.pt}</span></p>
+          {body}
+        </div>
+        {audio && <button className="chipbtn" onClick={() => say(audio)} aria-label="Ouvir o exemplo">🔊</button>}
+      </div>
+    );
+  };
+  return (
+    <div className="examples">
+      <div className="row" style={{ gap: 8 }}><span style={{ fontSize: 22 }}>👩‍🏫</span><b>Como fazer — veja a Camila resolvendo</b></div>
+      {picked.map(row)}
+      <p className="small mute">Agora é a sua vez! Os exercícios são parecidos com estes.</p>
+    </div>
+  );
+}
+
+export function LessonPage({ lesson, unit, onStart, extraColor, who }: { lesson: Lesson; unit: Unit; onStart: () => void; extraColor?: string; who: Who }) {
   const color = extraColor ?? unit.color;
   useEffect(() => () => stopVoice(), []);
   return (
@@ -92,6 +137,8 @@ export function LessonPage({ lesson, unit, onStart, extraColor }: { lesson: Less
             <p>{unit.parentNote}</p>
           </div>
         )}
+
+        <Examples lesson={lesson} unit={unit} who={who} />
 
         {lesson.classActivity && (
           <div className="classnote">

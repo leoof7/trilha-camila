@@ -160,7 +160,7 @@ export function Player({ studentId, unitId, lessonId, mode, withTeacher }: { stu
             <button className="chipbtn" disabled={!nextL} onClick={() => openL(nextL)}>{nextL?.lesson.title ?? ''} ›</button>
           </div>
         )}
-        {!askResume && phase === 'page' && lesson && <LessonPage lesson={lesson} unit={unit} extraColor={reviewColor} onStart={() => setPhase('play')} />}
+        {!askResume && phase === 'page' && lesson && <LessonPage lesson={lesson} unit={unit} who={who} extraColor={reviewColor} onStart={() => setPhase('play')} />}
 
         {!askResume && phase === 'play' && ex && ask && (
           <>
