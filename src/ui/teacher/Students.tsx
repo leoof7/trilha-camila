@@ -125,12 +125,12 @@ function Progress({ id }: { id: string }) {
       </section>
       <section className="card">
         <div className="row wrap">
-          <h3 className="grow">Unit liberada até</h3>
+          <h3 className="grow">Unit em que está agora</h3>
           <select className="input" style={{ width: 'auto' }} value={s.currentUnit} onChange={(e) => update((d) => ({ ...d, students: d.students.map((x) => (x.id === id ? { ...x, currentUnit: Number(e.target.value) } : x)) }))}>
             {UNITS.map((u) => <option key={u.id} value={u.id}>Unit {u.id} · {u.title}</option>)}
           </select>
         </div>
-        <p className="small mute">A criança também libera a próxima unit sozinha quando tira C ou mais na provinha.</p>
+        <p className="small mute">Todas as units ficam abertas, como no livro. Esta é só a unit em que a aula está agora (aparece no painel Hoje).</p>
       </section>
       <section className="card">
         <h3>Units da apostila</h3>

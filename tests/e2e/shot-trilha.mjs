@@ -7,6 +7,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const b = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
 const p = await (await b.newContext({ viewport: { width: 400, height: 860 } })).newPage();
 await p.goto(pathToFileURL(path.join(here, '../../dist/index.html')).href + '?test'); await p.waitForTimeout(400);
+if (await p.locator('text=Usar sem conta').count()) { await p.click('text=Usar sem conta'); await p.waitForTimeout(300); }
 await p.click('text=Continuar'); await p.fill('#sa', '9'); await p.click('text=Continuar'); await p.click('text=Começar a trilha');
 await p.click('.pcard.prof'); await p.click('text=▶ Iniciar aula'); await p.click('text=Começar a aula');
 await p.click('.today button:text-is("▶ Trilha de Anne")');
@@ -17,4 +18,6 @@ await p.click('text=🏠 Meu menu'); await p.click('nav >> text=Sair'); await p.
 await p.waitForTimeout(300);
 await p.evaluate(() => window.scrollTo(0, 190)); await p.waitForTimeout(300);
 await p.screenshot({ path: path.join(here, 'prints', '18-trilha-versao-a.png') });
+await p.setViewportSize({ width: 1440, height: 900 }); await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(300);
+await p.screenshot({ path: path.join(here, 'prints', '19-aluna-pc-meio.png') });
 await b.close(); console.log('ok');

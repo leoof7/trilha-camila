@@ -17,6 +17,7 @@ const must = async (sel, why) => { if (!(await p.locator(sel).count())) { await 
 const text = async () => (await p.locator('body').innerText());
 
 await p.goto(pathToFileURL(path.join(here, '../../dist/index.html')).href + '?test'); await p.waitForTimeout(500);
+if (await p.locator('text=Usar sem conta').count()) { await p.click('text=Usar sem conta'); await p.waitForTimeout(300); }
 // primeiro acesso
 await p.click('text=Continuar');
 await p.fill('#sa', '9');
@@ -114,6 +115,10 @@ await p.screenshot({ path: S + '16-aluna-trilha.png' });
 await p.click('.ktabs >> text=Meu boletim'); await p.waitForTimeout(150);
 await must('text=Anne leu a história sozinha.', 'descrição da aula no boletim da aluna');
 await p.screenshot({ path: S + '17-aluna-boletim.png', fullPage: true });
+// no computador o app do aluno vira 3 colunas
+await p.setViewportSize({ width: 1440, height: 900 }); await p.click('.ktabs >> text=Trilha'); await p.waitForTimeout(200);
+await must('.kside .kcard', 'coluna da direita no computador');
+await p.screenshot({ path: S + '19-aluna-pc.png' });
 
 if (errs.length) { console.error('ERROS NA TELA:', errs); process.exit(1); }
 console.log('OK: aula iniciada e finalizada, todas as units e provinhas, prova do caderno, ficha completa e login da aluna.');

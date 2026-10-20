@@ -1,17 +1,18 @@
 import { useApp, studentXp } from '../../state';
-import { UNITS, REVIEWS, FUN_ZONE, KIND_ICON, KIND_LABEL, type Lesson } from '../../content';
+import { UNITS, REVIEWS, FUN_ZONE, KIND_ICON, KIND_LABEL, findLesson, type Lesson } from '../../content';
 import { levelOf, streak, STICKERS, DAILY_GOAL, dayKey } from '../../engine/game';
 import { Avatar, LetterBadge, fmtDate } from '../common';
 import { Mascot } from '../Mascot';
 import { useState } from 'react';
 import { Modal } from '../common';
-import { ApostilaShelf } from '../Apostila';
+import { ApostilaShelf, pageSrc, openApostila } from '../Apostila';
+import { LeseteSignature } from '../Brand';
 import { ClassBar } from '../teacher/ClassFlow';
 import { bestQuiz, bestStars, lessonDone, nextLesson, unitOpen, unitProgress } from './progress';
 import { letter, LETTER_TEXT, average } from '../../engine/grade';
 
 const SNAKE = [0, 58, 86, 58, 0, -58, -86, -58];
-const NODE_H = 104;
+const NODE_H = 118;
 
 export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: string; tab?: 'trail' | 'album' | 'me' | 'book'; withTeacher?: boolean }) {
   const { db, go } = useApp();
@@ -25,6 +26,7 @@ export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: 
   return (
     <div className={`kid kid-${s.gender}`}>
       <div className="kcol">
+        <div className="kleft">
         <header className="ktop pad">
           <div className="row">
             <Avatar s={s} size={46} />
@@ -41,19 +43,22 @@ export function KidHome({ studentId, tab = 'trail', withTeacher }: { studentId: 
             <span className="chip" title="Figurinhas">🏅 {db.stickers.filter((x) => x.studentId === s.id).length}</span>
           </div>
         </header>
-        {withTeacher && <ClassBar compact />}
         <nav className="ktabs" aria-label="Seções">
           <button aria-current={tab === 'trail'} onClick={() => setTab('trail')}><span>🗺️</span>Trilha</button>
           <button aria-current={tab === 'book'} onClick={() => setTab('book')}><span>📖</span>Apostila</button>
           <button aria-current={tab === 'album'} onClick={() => setTab('album')}><span>🏅</span>Figurinhas</button>
           <button aria-current={tab === 'me'} onClick={() => setTab('me')}><span>📒</span>Meu boletim</button>
         </nav>
-
+        <div className="kbrand"><LeseteSignature /></div>
+        </div>
+        <div className="kmain">
+        {withTeacher && <ClassBar compact />}
         {tab === 'trail' && <Trail studentId={s.id} withTeacher={withTeacher} todayN={db.results.filter((r) => r.studentId === s.id && r.date === dayKey()).length} />}
         {tab === 'album' && <Album studentId={s.id} />}
         {tab === 'me' && <Me studentId={s.id} />}
         {tab === 'book' && <main className="me pad"><ApostilaShelf name={s.name} color={s.gender === 'm' ? '#1F5AE2' : '#E8458B'} /></main>}
-
+        </div>
+        <KidSide studentId={s.id} withTeacher={withTeacher} />
       </div>
     </div>
   );
@@ -307,5 +312,49 @@ function MyClasses({ studentId }: { studentId: string }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/** Coluna da direita (só no computador): continuar de onde parou, capítulo atual, página da apostila e figurinhas. */
+function KidSide({ studentId, withTeacher }: { studentId: string; withTeacher?: boolean }) {
+  const { db, go } = useApp();
+  const nxt = nextLesson(db, studentId);
+  const f = nxt ? findLesson(nxt.lessonId) : null;
+  const u = UNITS.find((x) => x.id === (nxt?.unitId ?? 1))!;
+  const prog = unitProgress(db, studentId, u.id);
+  const quiz = bestQuiz(db, studentId, u.id);
+  const story = u.lessons.find((l) => l.story)?.story?.title;
+  const mine = db.stickers.filter((x) => x.studentId === studentId).slice(-6).reverse();
+  return (
+    <aside className="kside" aria-label="Resumo">
+      {f && nxt && (
+        <section className="kcard next" style={{ ['--c' as string]: u.color }}>
+          <small>Continuar de onde parou</small>
+          <b className="ttl">{f.lesson.title}</b>
+          <span className="sub">Capítulo {u.id} · {f.lesson.ref.printed ? `apostila p. ${f.lesson.ref.printed}` : f.lesson.ref.section}</span>
+          <button className="btn block" onClick={() => go({ name: 'play', studentId, unitId: nxt.unitId, lessonId: nxt.lessonId, mode: 'lesson', withTeacher })}>▶ Jogar agora</button>
+        </section>
+      )}
+      <section className="kcard">
+        <small>Capítulo {u.id}</small>
+        <b className="ttl">{u.title}</b>
+        {story && <span className="sub">História: {story}</span>}
+        <div className="mini" aria-label={`${prog.done} de ${prog.total} lições`}><i style={{ width: `${prog.pct * 100}%`, background: u.color }} /></div>
+        <span className="sub">{prog.done} de {prog.total} lições · {quiz ? `provinha: ${quiz.points} pontos` : 'provinha com a professora'}</span>
+      </section>
+      {f && (
+        <button className="kcard page" onClick={() => openApostila(f.lesson.ref.pdf)} aria-label="Abrir a página da apostila">
+          <small>Na apostila</small>
+          <img src={pageSrc(f.lesson.ref.pdf)} alt="" loading="lazy" />
+          <span className="sub">Tocar para abrir a página</span>
+        </button>
+      )}
+      {mine.length > 0 && (
+        <section className="kcard">
+          <small>Últimas figurinhas</small>
+          <div className="row wrap" style={{ gap: 6, fontSize: 30 }}>{mine.map((m) => <span key={m.id}>{STICKERS.find((x) => x.id === m.sticker)?.emoji}</span>)}</div>
+        </section>
+      )}
+    </aside>
   );
 }

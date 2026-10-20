@@ -76,3 +76,19 @@ describe('senha do aluno', () => {
     expect(passwordOk({ name: 'Anne', pin: '1234' }, 'anne')).toBe(false);
   });
 });
+
+import { unitOpen, nextLesson } from '../src/ui/kid/progress';
+import { emptyDB } from '../src/store/db';
+describe('tudo liberado, como no livro', () => {
+  it('qualquer unit abre para qualquer aluno', () => {
+    const db = { ...emptyDB(), students: [{ id: 's', name: 'Anne', gender: 'f' as const, age: 9, currentUnit: 1, createdAt: '' }] };
+    for (let u = 1; u <= 11; u++) expect(unitOpen(db, 's', u)).toBe(true);
+  });
+  it('a próxima lição segue o capítulo em que a criança mexeu por último', () => {
+    const base = emptyDB();
+    const r = { id: 'r', studentId: 's', lessonId: 'u5-vocab', unitId: 5, mode: 'lesson' as const, date: '2026-10-20', at: '2026-10-20T10:00:00Z', total: 5, correctFirst: 5, mistakes: 0, points: 100, xp: 10, stars: 3 as const, seconds: 60, missed: [] };
+    const db = { ...base, results: [r] };
+    expect(nextLesson(db, 's')?.unitId).toBe(5);
+    expect(nextLesson(base, 's')?.unitId).toBe(1);
+  });
+});

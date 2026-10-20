@@ -1,14 +1,10 @@
 import type { DB } from '../../store/types';
 import { UNITS, REVIEWS, FUN_ZONE } from '../../content';
-import { letter } from '../../engine/grade';
 
-/** A unit abre quando a Camila liberou (unit atual) ou quando a provinha da unit anterior deu C ou mais. */
-export function unitOpen(db: DB, studentId: string, unitId: number): boolean {
-  const s = db.students.find((x) => x.id === studentId);
-  if (!s) return false;
-  if (unitId <= s.currentUnit) return true;
-  const prevQuiz = db.grades.filter((g) => g.studentId === studentId && g.unitId === unitId - 1 && g.source === 'provinha');
-  return prevQuiz.some((g) => letter(g.points, db.settings.scale) !== 'D') && unitOpen(db, studentId, unitId - 1);
+/** Tudo liberado: como no livro, a criança e a professora abrem qualquer capítulo a qualquer hora.
+ *  (A provinha continua sendo só com a professora.) */
+export function unitOpen(_db: DB, _studentId: string, _unitId: number): boolean {
+  return true;
 }
 
 export function lessonDone(db: DB, studentId: string, lessonId: string) {
@@ -31,13 +27,17 @@ export function bestQuiz(db: DB, studentId: string, unitId: number) {
 }
 
 /** Próxima lição sugerida (a primeira não feita, na ordem da apostila). */
+/** Próxima lição sugerida: continua o capítulo em que a criança mexeu por último (tudo é livre,
+ *  então ela pode ter pulado para outro); se ele acabou, segue a ordem da apostila a partir dali. */
 export function nextLesson(db: DB, studentId: string): { unitId: number; lessonId: string } | null {
-  for (const u of UNITS) {
-    if (!unitOpen(db, studentId, u.id)) break;
+  const last = db.results.filter((r) => r.studentId === studentId && r.mode === 'lesson').sort((a, b) => b.at.localeCompare(a.at))[0];
+  const startIdx = Math.max(0, UNITS.findIndex((u) => u.id === last?.unitId));
+  const order = [...UNITS.slice(startIdx), ...UNITS.slice(0, startIdx)];
+  for (const u of order) {
     for (const l of u.lessons) if (!lessonDone(db, studentId, l.id)) return { unitId: u.id, lessonId: l.id };
     const rv = REVIEWS.find((r) => r.afterUnit === u.id);
     if (rv && !lessonDone(db, studentId, rv.lesson.id)) return { unitId: u.id, lessonId: rv.lesson.id };
   }
-  if (!lessonDone(db, studentId, FUN_ZONE.id) && unitOpen(db, studentId, 11)) return { unitId: 11, lessonId: FUN_ZONE.id };
+  if (!lessonDone(db, studentId, FUN_ZONE.id)) return { unitId: 11, lessonId: FUN_ZONE.id };
   return null;
 }
