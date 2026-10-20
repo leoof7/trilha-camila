@@ -8,16 +8,17 @@ Não precisa de internet nem de instalar nada.
 > no navegador para esse arquivo.
 
 ## Primeiro acesso
-1. A Camila cria a senha de 4 números.
-2. Cadastra a Anne: nome, idade, foto (opcional) e cor do app (rosa).
-3. Pronto. A tela inicial mostra "Quem vai estudar hoje?".
+1. A Camila escreve o nome dela (senha da área da professora é opcional).
+2. Cadastra a Anne: nome, idade, foto (opcional), cor do app (rosa) e a família (mãe, pai, WhatsApp).
+3. Pronto. A tela inicial pergunta **"Quem está entrando?"** → Sou a professora / Sou aluno(a).
+   A senha da aluna é o **próprio nome** (Anne). Dá para trocar na ficha → Dados.
 
 ## Na aula
-- Camila entra com a senha → **Início** → **▶ Abrir aula com Anne**.
-  Nesse modo, quando aparecer exercício de falar, a Camila toca em **👍 Falou bem!**.
-- Depois da aula: **+ Registrar aula de hoje** → presença, páginas da apostila trabalhadas,
-  observação e próximo objetivo.
-- Na ficha da aluna dá para lançar nota, dar figurinha (Phrase Hunter) e as estrelas do Teacher's feedback.
+- **Hoje → ▶ Iniciar aula**: o app salva dia, hora e presença, e já sugere o plano da aula.
+- **▶ Trilha de Anne** abre tudo liberado. Exercício de falar: a Camila toca em **👍 Falou bem!**.
+- **🏠 Meu menu** volta para a área da professora sem parar a aula.
+- **■ Finalizar aula**: descrição + próximo objetivo. Em seguida sai o **card do dia para os pais** (enviar no WhatsApp).
+- **Provas → + Criar prova**: monta a prova da apostila, aplica no app ou imprime a folha para os pais.
 
 ## Toda semana
 **Configurações → Baixar backup** e guarde o arquivo nesta pasta (Camila).
