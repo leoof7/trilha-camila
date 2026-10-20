@@ -1,0 +1,20 @@
+// Print da trilha no meio do caminho: Unit 1 completa, Unit 2 com 2 lições.
+import { chromium } from 'playwright';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import path from 'node:path';
+import { play } from './bot.mjs';
+const here = path.dirname(fileURLToPath(import.meta.url));
+const b = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
+const p = await (await b.newContext({ viewport: { width: 400, height: 860 } })).newPage();
+await p.goto(pathToFileURL(path.join(here, '../../dist/index.html')).href + '?test'); await p.waitForTimeout(400);
+await p.click('text=Continuar'); await p.fill('#sa', '9'); await p.click('text=Continuar'); await p.click('text=Começar a trilha');
+await p.click('.pcard.prof'); await p.click('text=▶ Iniciar aula'); await p.click('text=Começar a aula');
+await p.click('.today button:text-is("▶ Trilha de Anne")');
+const go = async (u, n) => { for (let i = 0; i < n; i++) { await p.locator(`section:has(.uband:has-text("Capítulo ${u} ·")) .node`).nth(i).click(); await play(p); await p.click('.result button:is(:text-is("Trilha"), :text-is("Continuar"))'); } };
+await go(1, 6); await p.click('text=Provinha da Unit 1'); await play(p); await p.click('.result button:is(:text-is("Trilha"), :text-is("Continuar"))');
+await go(2, 2);
+await p.click('text=🏠 Meu menu'); await p.click('nav >> text=Sair'); await p.click('text=Sou aluno(a)'); await p.click('.pcard:has-text("Anne")'); await p.fill('#spw', 'anne'); await p.click('text=Entrar');
+await p.waitForTimeout(300);
+await p.evaluate(() => window.scrollTo(0, 190)); await p.waitForTimeout(300);
+await p.screenshot({ path: path.join(here, 'prints', '18-trilha-versao-a.png') });
+await b.close(); console.log('ok');

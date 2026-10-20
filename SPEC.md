@@ -132,3 +132,4 @@ link, várias turmas, Apostila 2.
 - **Portal da professora:** foto de perfil, menu em pílulas por grupo (Dia a dia, Material, Caderneta), cabeçalho com resumo.
 - **Trilha:** caminho em cobra (curvas), nós menores e mais espaçados, a unit atual em cor cheia com "Você está aqui"; as outras ficam em tom claro.
 - **Nuvem ao vivo:** com conta, cada aparelho confere a cada 6 s (e ao voltar para a tela) se outro aparelho salvou algo mais novo e atualiza sozinho. Lição pela metade continua de onde parou em qualquer aparelho.
+- **Trilha versão A (escolhida em 20/10/2026):** cada unit é um "Capítulo" com o nome da história da apostila no cabeçalho. Capítulo concluído (todas as lições + provinha) vira uma faixa compacta com ✓ e a nota; tocar abre de novo. Bandeirinha "Start" ao lado da próxima lição.

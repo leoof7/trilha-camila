@@ -607,3 +607,12 @@ table.t td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-al
 .seg button.blue[aria-pressed='true'] { background: #1F5AE2; }
 .examlist li { display: list-item; padding: 4px 0; border-bottom: 1px solid var(--line); }
 .examlist li > span.grow { display: inline-block; width: calc(100% - 34px); vertical-align: top; }
+/* Versão A: capítulo concluído vira faixa compacta; história no cabeçalho do capítulo */
+.uchip { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border-radius: 18px; padding: 10px 14px; background: color-mix(in srgb, var(--c) 12%, #fff); border: 2px solid color-mix(in srgb, var(--c) 30%, #fff); color: color-mix(in srgb, var(--c) 70%, #000); }
+.uchip small { display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+.uchip b { font: 800 17px var(--f-display); }
+.uchip .ck { width: 30px; height: 30px; border-radius: 50%; background: var(--c); color: #fff; display: grid; place-items: center; font-weight: 800; flex: none; }
+.uband .ustory { display: block; font-size: 13px; font-weight: 700; margin-top: 3px; opacity: .95; }
+.node-info { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.node .startflag { top: 50%; left: calc(100% + 10px); transform: translateY(-50%); animation: bobx 1.6s ease-in-out infinite; }
+@keyframes bobx { 50% { transform: translateY(-50%) translateX(4px); } }

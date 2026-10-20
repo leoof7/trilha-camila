@@ -100,6 +100,7 @@ function Trail({ studentId, withTeacher, todayN }: { studentId: string; withTeac
   };
 
   const [quizAsk, setQuizAsk] = useState<number | null>(null);
+  const [shown, setShown] = useState<number[]>([]); // capítulos concluídos que a criança abriu de novo
   return (
     <main className="pad">
       {quizAsk !== null && <QuizGate unitId={quizAsk} onClose={() => setQuizAsk(null)} onOk={() => { const u = quizAsk; setQuizAsk(null); play(u, `quiz-u${u}`, 'quiz'); }} />}
@@ -122,12 +123,26 @@ function Trail({ studentId, withTeacher, todayN }: { studentId: string; withTeac
           const quizOpen = open; // provinha: sempre com a professora (modo aula ou senha)
           const rv = REVIEWS.find((r) => r.afterUnit === u.id);
           const isCur = nxt?.unitId === u.id;
+          const story = u.lessons.find((l) => l.story)?.story?.title;
+          const finished = prog.done === prog.total && !!quiz;
+          const expanded = open && (!finished || isCur || shown.includes(u.id));
+          if (open && finished && !expanded) return (
+            <section key={u.id} className="col" style={{ gap: 18 }}>
+              <button className="uchip" style={{ ['--c' as string]: u.color }} onClick={() => setShown([...shown, u.id])} aria-label={`Capítulo ${u.id} concluído, ver lições`}>
+                <span className="ck" aria-hidden="true">✓</span>
+                <span className="grow"><small>Capítulo {u.id} · concluído</small><b>{u.title}</b></span>
+                <LetterBadge points={quiz!.points} scale={db.settings.scale} sm />
+              </button>
+              {rv && <div className="nodes">{nodeFor(u.id, rv.lesson, 0, true, rv.color)}</div>}
+            </section>
+          );
           return (
             <section key={u.id} className="col" style={{ gap: 18 }}>
               <div className={`uband${open ? '' : ' locked'}${isCur ? ' current' : ''}${prog.done === prog.total ? ' finished' : ''}`} style={{ ['--c' as string]: u.color }}>
                 <div>
-                  <small>Unit {String(u.id).padStart(2, '0')} · {open ? `${prog.done}/${prog.total} lições` : 'bloqueada'}</small>
+                  <small>Capítulo {u.id} · {open ? `${prog.done}/${prog.total} lições` : 'bloqueado'}</small>
                   <h2>{u.title}</h2>
+                  {open && story && <span className="ustory">História: {story}</span>}
                   {isCur && <span className="youhere">📍 Você está aqui</span>}
                 </div>
                 <span className="uemoji" aria-hidden="true">{!open ? '🔒' : prog.done === prog.total ? '✅' : u.emoji}</span>

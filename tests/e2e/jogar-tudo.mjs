@@ -39,7 +39,7 @@ await p.screenshot({ path: S + '03-trilha-cobra.png' });
 // joga todas as lições e provinhas (primeira lição com 2 erros de propósito)
 let first = true;
 for (const u of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) {
-  const sec = `section:has(.uband:has-text("Unit ${String(u).padStart(2, '0')}"))`;
+  const sec = `section:has(.uband:has-text("Capítulo ${u} ·"))`;
   const n = await p.locator(`${sec} .node:not(.lock)`).count();
   for (let i = 0; i < n; i++) {
     await p.locator(`${sec} .node`).nth(i).click(); await p.waitForTimeout(150);
